@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity =0.8.26;
 
 interface ITokenFactory {
     function createToken(string memory name, string memory symbol, uint256 initialSupply) external returns (address);
