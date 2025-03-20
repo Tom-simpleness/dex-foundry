@@ -1,0 +1,33 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+
+# Build directories
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Foundry
+cache/
+out/
+
+# Hardhat
+artifacts/
+cache/
+coverage/
+coverage.json
+
+# Logs
+*.log 
