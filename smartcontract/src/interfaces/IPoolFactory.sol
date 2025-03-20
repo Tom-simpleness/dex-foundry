@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IFactory {
+interface IPoolFactory {
     event PoolCreated(address indexed tokenA, address indexed tokenB, address pool, uint256 poolsCount);
 
     function createPool(address tokenA, address tokenB) external returns (address pool);

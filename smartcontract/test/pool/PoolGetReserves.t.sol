@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/Pool.sol";
-import "../../src/Factory.sol";
+import "../../src/PoolFactory.sol";
 import "../../src/TokenFactory.sol";
 import "../../src/interfaces/IPool.sol";
-import "../../src/interfaces/IFactory.sol";
+import "../../src/interfaces/IPoolFactory.sol";
 
 contract PoolGetReservesTest is Test {
     address constant OWNER = address(1);
@@ -96,7 +96,7 @@ contract PoolGetReservesTest is Test {
         // Setup factory and fee recipient for swap test
         address feeRecipient = address(10);
         vm.startPrank(FACTORY);
-        Factory factoryContract = new Factory();
+        PoolFactory factoryContract = new PoolFactory();
         factoryContract.setFee(300); // 0.3%
         factoryContract.setFeeRecipient(feeRecipient);
         vm.stopPrank();
@@ -104,13 +104,13 @@ contract PoolGetReservesTest is Test {
         // Mock the factory address to return our test factory
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IFactory.getFee.selector),
+            abi.encodeWithSelector(IPoolFactory.getFee.selector),
             abi.encode(300)
         );
         
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IFactory.getFeeRecipient.selector),
+            abi.encodeWithSelector(IPoolFactory.getFeeRecipient.selector),
             abi.encode(feeRecipient)
         );
         
@@ -141,7 +141,7 @@ contract PoolGetReservesTest is Test {
         // Setup factory and fee recipient
         address feeRecipient = address(10);
         vm.startPrank(FACTORY);
-        Factory factoryContract = new Factory();
+        PoolFactory factoryContract = new PoolFactory();
         factoryContract.setFee(300); // 0.3%
         factoryContract.setFeeRecipient(feeRecipient);
         vm.stopPrank();
@@ -149,13 +149,13 @@ contract PoolGetReservesTest is Test {
         // Mock the factory address to return our test factory
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IFactory.getFee.selector),
+            abi.encodeWithSelector(IPoolFactory.getFee.selector),
             abi.encode(300)
         );
         
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IFactory.getFeeRecipient.selector),
+            abi.encodeWithSelector(IPoolFactory.getFeeRecipient.selector),
             abi.encode(feeRecipient)
         );
         

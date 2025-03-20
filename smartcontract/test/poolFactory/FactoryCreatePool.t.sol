@@ -2,24 +2,24 @@
 pragma solidity ^0.8.0;
 
 import {Test, console} from "forge-std/Test.sol";
-import "../../src/Factory.sol";
+import "../../src/PoolFactory.sol";
 import "../../src/Pool.sol";
 import "../../src/TokenFactory.sol";
-import "../../src/interfaces/IFactory.sol";
+import "../../src/interfaces/IPoolFactory.sol";
 
 contract FactoryCreatePoolTest is Test {
     address constant OWNER = address(1);
     address constant USER1 = address(2);
     address constant USER2 = address(3);
     
-    Factory public factory;
+    PoolFactory public factory;
     TokenFactory public tokenFactory;
     address public token1;
     address public token2;
     
     function setUp() public {
         vm.startPrank(OWNER);
-        factory = new Factory();
+        factory = new PoolFactory();
         tokenFactory = new TokenFactory();
         
         // Create test tokens
@@ -65,7 +65,7 @@ contract FactoryCreatePoolTest is Test {
         
         // Check for event emission
         vm.expectEmit(true, true, true, false); // Check for indexed params
-        emit IFactory.PoolCreated(token0, token1_, address(0), 1); // We don't check the pool address as we don't know it in advance
+        emit IPoolFactory.PoolCreated(token0, token1_, address(0), 1); // We don't check the pool address as we don't know it in advance
         
         // Create pool
         factory.createPool(token1, token2);

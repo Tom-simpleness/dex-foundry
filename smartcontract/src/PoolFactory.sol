@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IFactory.sol";
+import "./interfaces/IPoolFactory.sol";
 import "./Pool.sol";
 
-contract Factory is IFactory, Ownable {
+contract PoolFactory is IPoolFactory, Ownable {
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
     uint256 public fee = 30; // 0.3% fee

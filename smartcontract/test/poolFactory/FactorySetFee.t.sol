@@ -2,19 +2,19 @@
 pragma solidity ^0.8.0;
 
 import {Test, console} from "forge-std/Test.sol";
-import "../../src/Factory.sol";
-import "../../src/interfaces/IFactory.sol";
+import "../../src/PoolFactory.sol";
+import "../../src/interfaces/IPoolFactory.sol";
 
 contract FactorySetFeeTest is Test {
     address constant OWNER = address(1);
     address constant USER1 = address(2);
     address constant USER2 = address(3);
     
-    Factory public factory;
+    PoolFactory public factory;
     
     function setUp() public {
         vm.startPrank(OWNER);
-        factory = new Factory();
+        factory = new PoolFactory();
         vm.stopPrank();
     }
     

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/Pool.sol";
-import "../../src/Factory.sol";
+import "../../src/PoolFactory.sol";
 import "../../src/TokenFactory.sol";
 import "../../src/interfaces/IPool.sol";
 
@@ -14,7 +14,7 @@ contract PoolSwapTest is Test {
     address constant FEE_RECIPIENT = address(4);
     
     Pool public pool;
-    Factory public factory;
+    PoolFactory public factory;
     TokenFactory public tokenFactory;
     address public token1;
     address public token2;
@@ -33,7 +33,7 @@ contract PoolSwapTest is Test {
         token2 = tokenFactory.createToken("Test Token 2", "TT2", 10_000_000 * 10**18);
         
         // Deploy factory and set fee details
-        factory = new Factory();
+        factory = new PoolFactory();
         factory.setFee(FEE_RATE);
         factory.setFeeRecipient(FEE_RECIPIENT);
         

@@ -6,7 +6,7 @@ import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol"
 import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IPool.sol";
-import "./interfaces/IFactory.sol";
+import "./interfaces/IPoolFactory.sol";
 import "./lib/Math.sol";
 
 contract Pool is IPool, Ownable, ReentrancyGuard {
@@ -145,7 +145,7 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         uint256 reserveOut = tokenIn == tokenA ? reserveB : reserveA;
         
         // Get fee from factory
-        uint256 fee = IFactory(factory).getFee();
+        uint256 fee = IPoolFactory(factory).getFee();
         
         // Calculate output amount
         amountOut = Math.getAmountOut(amountIn, reserveIn, reserveOut, fee);
@@ -156,7 +156,7 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         
         // Send fee to fee recipient
         if (feeAmount > 0) {
-            address feeRecipient = IFactory(factory).getFeeRecipient();
+            address feeRecipient = IPoolFactory(factory).getFeeRecipient();
             IERC20(tokenIn).safeTransferFrom(msg.sender, feeRecipient, feeAmount);
         }
         

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/Pool.sol";
-import "../../src/Factory.sol";
+import "../../src/PoolFactory.sol";
 import "../../src/TokenFactory.sol";
 import "../../src/interfaces/IPool.sol";
 
@@ -13,7 +13,7 @@ contract PoolGetTokensTest is Test {
     address constant FACTORY_ADDRESS = address(3);
     
     Pool public pool;
-    Factory public factory;
+    PoolFactory public factory;
     TokenFactory public tokenFactory;
     address public token1;
     address public token2;
@@ -30,9 +30,9 @@ contract PoolGetTokensTest is Test {
         token4 = tokenFactory.createToken("Test Token 4", "TT4", 1_000_000 * 10**18);
         
         // Deploy factory
-        factory = new Factory();
+        factory = new PoolFactory();
         vm.stopPrank();
-    }
+    }   
     
     function test_getTokens_directInitialization() public {
         // Deploy and initialize a pool directly
@@ -188,7 +188,7 @@ contract PoolGetTokensTest is Test {
     function test_getTokens_multipleFactories() public {
         // Create a second factory
         vm.prank(OWNER);
-        Factory factory2 = new Factory();
+        PoolFactory factory2 = new PoolFactory();
         
         // Create pools with same token pair but from different factories
         vm.startPrank(OWNER);
