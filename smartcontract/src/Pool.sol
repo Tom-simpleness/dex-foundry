@@ -136,7 +136,7 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
     }
     
     // Requirement: Swaps must maintain the constant product formula k = x * y
-    function swapExactTokensForTokens(address tokenIn, uint256 amountIn) external override nonReentrant returns (uint256 amountOut) {
+    function swap(address tokenIn, uint256 amountIn) external override nonReentrant returns (uint256 amountOut) {
         require(tokenIn == tokenA || tokenIn == tokenB, "Pool: invalid input token");
         require(amountIn > 0, "Pool: insufficient input amount");
         
@@ -147,21 +147,30 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         // Get fee from factory
         uint256 fee = IPoolFactory(factory).getFee();
         
-        // Calculate output amount
+        // Calculate output amount (this needs to account for both protocol and LP fees)
         amountOut = Math.getAmountOut(amountIn, reserveIn, reserveOut, fee);
         require(amountOut > 0, "Pool: insufficient output amount");
         
-        // Calculate fee amount
+        // Calculate total fee amount
         uint256 feeAmount = (amountIn * fee) / 10000;
         
-        // Send fee to fee recipient
-        if (feeAmount > 0) {
+        // Get protocol fee portion from factory (in basis points, e.g. 5000 = 50%)
+        uint256 protocolFeePortion = IPoolFactory(factory).getProtocolFeePortion();
+        
+        // Calculate protocol fee amount (portion that goes to fee recipient)
+        uint256 protocolFeeAmount = (feeAmount * protocolFeePortion) / 10000;
+        
+        // Calculate LP fee amount (portion that stays in the pool)
+        uint256 lpFeeAmount = feeAmount - protocolFeeAmount;
+        
+        // Send protocol fee to fee recipient
+        if (protocolFeeAmount > 0) {
             address feeRecipient = IPoolFactory(factory).getFeeRecipient();
-            IERC20(tokenIn).safeTransferFrom(msg.sender, feeRecipient, feeAmount);
+            IERC20(tokenIn).safeTransferFrom(msg.sender, feeRecipient, protocolFeeAmount);
         }
         
-        // Transfer input token to pool
-        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn - feeAmount);
+        // Transfer input token to pool (including LP fee portion)
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn - protocolFeeAmount);
         
         // Transfer output token to sender
         IERC20(tokenOut).safeTransfer(msg.sender, amountOut);

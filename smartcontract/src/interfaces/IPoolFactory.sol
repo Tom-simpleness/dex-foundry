@@ -8,6 +8,8 @@ interface IPoolFactory {
     function getPool(address tokenA, address tokenB) external view returns (address pool);
     function getFee() external view returns (uint256);
     function getFeeRecipient() external view returns (address);
+    function getProtocolFeePortion() external view returns (uint256);
     function setFeeRecipient(address _feeRecipient) external;
     function setFee(uint256 _fee) external;
+    function setProtocolFeePortion(uint256 _protocolFeePortion) external;
 } 

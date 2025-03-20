@@ -99,6 +99,7 @@ contract PoolGetReservesTest is Test {
         PoolFactory factoryContract = new PoolFactory();
         factoryContract.setFee(300); // 0.3%
         factoryContract.setFeeRecipient(feeRecipient);
+        factoryContract.setProtocolFeePortion(10000); // 100% goes to protocol for simplicity
         vm.stopPrank();
         
         // Mock the factory address to return our test factory
@@ -113,6 +114,12 @@ contract PoolGetReservesTest is Test {
             abi.encodeWithSelector(IPoolFactory.getFeeRecipient.selector),
             abi.encode(feeRecipient)
         );
+
+        vm.mockCall(
+            FACTORY,
+            abi.encodeWithSelector(IPoolFactory.getProtocolFeePortion.selector),
+            abi.encode(10000) // 100% goes to protocol
+        );
         
         // Get reserves before swap
         (uint256 reserveBefore1, uint256 reserveBefore2) = pool.getReserves();
@@ -120,7 +127,7 @@ contract PoolGetReservesTest is Test {
         // Perform a swap
         uint256 swapAmount = 1_000 * 10**18;
         vm.startPrank(USER1);
-        uint256 outputAmount = pool.swapExactTokensForTokens(token1, swapAmount);
+        uint256 outputAmount = pool.swap(token1, swapAmount);
         vm.stopPrank();
         
         // Get reserves after swap
@@ -144,6 +151,7 @@ contract PoolGetReservesTest is Test {
         PoolFactory factoryContract = new PoolFactory();
         factoryContract.setFee(300); // 0.3%
         factoryContract.setFeeRecipient(feeRecipient);
+        factoryContract.setProtocolFeePortion(10000); // 100% to protocol
         vm.stopPrank();
         
         // Mock the factory address to return our test factory
@@ -159,6 +167,12 @@ contract PoolGetReservesTest is Test {
             abi.encode(feeRecipient)
         );
         
+        vm.mockCall(
+            FACTORY,
+            abi.encodeWithSelector(IPoolFactory.getProtocolFeePortion.selector),
+            abi.encode(10000) // 100% goes to protocol
+        );
+        
         vm.startPrank(USER1);
         
         // Add initial liquidity
@@ -167,7 +181,7 @@ contract PoolGetReservesTest is Test {
         
         // First swap: token1 to token2
         uint256 swapAmount1 = 5_000 * 10**18;
-        pool.swapExactTokensForTokens(token1, swapAmount1);
+        pool.swap(token1, swapAmount1);
         
         // Get reserves after first operation sequence
         (uint256 reserve1After1, uint256 reserve2After1) = pool.getReserves();
@@ -182,7 +196,7 @@ contract PoolGetReservesTest is Test {
         
         // Second swap: token2 to token1
         uint256 swapAmount2 = 8_000 * 10**18;
-        pool.swapExactTokensForTokens(token2, swapAmount2);
+        pool.swap(token2, swapAmount2);
         
         // Get reserves after third operation
         (uint256 reserve1After3, uint256 reserve2After3) = pool.getReserves();

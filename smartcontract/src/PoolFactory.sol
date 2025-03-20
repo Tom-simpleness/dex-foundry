@@ -10,6 +10,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     address[] public allPairs;
     uint256 public fee = 30; // 0.3% fee
     address public feeRecipient;
+    uint256 public protocolFeePortion = 5000; // 50% of fees to protocol by default, 50% to LPs
     
     constructor() Ownable(msg.sender) {
         feeRecipient = msg.sender;
@@ -64,6 +65,10 @@ contract PoolFactory is IPoolFactory, Ownable {
         return feeRecipient;
     }
     
+    function getProtocolFeePortion() external view returns (uint256) {
+        return protocolFeePortion;
+    }
+    
     // Requirement: Only owner can set fee recipient
     function setFeeRecipient(address _feeRecipient) external override onlyOwner {
         require(_feeRecipient != address(0), "Factory: zero address");
@@ -75,5 +80,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         // Prevent setting unreasonably high fees (max 5%)
         require(_fee <= 500, "Factory: fee too high");
         fee = _fee;
+    }
+    
+    // Requirement: Only owner can set protocol fee portion
+    function setProtocolFeePortion(uint256 _protocolFeePortion) external onlyOwner {
+        // Ensure the portion is between 0% and 100%
+        require(_protocolFeePortion <= 10000, "Factory: invalid protocol fee portion");
+        protocolFeePortion = _protocolFeePortion;
     }
 } 

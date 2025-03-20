@@ -31,6 +31,26 @@ contract PoolGetTokensTest is Test {
         
         // Deploy factory
         factory = new PoolFactory();
+        
+        // Configure factory mock calls for tests
+        vm.mockCall(
+            FACTORY_ADDRESS,
+            abi.encodeWithSelector(bytes4(keccak256("getFee()"))),
+            abi.encode(300) // 0.3%
+        );
+        
+        vm.mockCall(
+            FACTORY_ADDRESS,
+            abi.encodeWithSelector(bytes4(keccak256("getFeeRecipient()"))),
+            abi.encode(OWNER)
+        );
+        
+        vm.mockCall(
+            FACTORY_ADDRESS,
+            abi.encodeWithSelector(bytes4(keccak256("getProtocolFeePortion()"))),
+            abi.encode(10000) // 100% to protocol for simplicity
+        );
+        
         vm.stopPrank();
     }   
     
@@ -165,7 +185,7 @@ contract PoolGetTokensTest is Test {
         pool.addLiquidity(10_000 * 10**18, 10_000 * 10**18);
         
         // Perform a swap
-        pool.swapExactTokensForTokens(token1, 1_000 * 10**18);
+        pool.swap(token1, 1_000 * 10**18);
         
         // Remove liquidity
         uint256 liquidity = pool.balanceOf(USER1) / 2;
