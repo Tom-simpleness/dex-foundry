@@ -2,7 +2,7 @@
 pragma solidity =0.8.26;
 
 import "forge-std/Script.sol";
-import "../src/TokenFactory.sol";
+import "../src/mocks/TokenFactory.sol";
 
 contract TokenFactoryScript is Script {
     function run() external {

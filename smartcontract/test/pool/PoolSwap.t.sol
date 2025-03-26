@@ -4,7 +4,7 @@ pragma solidity =0.8.26;
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/Pool.sol";
 import "../../src/PoolFactory.sol";
-import "../../src/TokenFactory.sol";
+import "../../src/mocks/TokenFactory.sol";
 import "../../src/interfaces/IPool.sol";
 
 contract PoolSwapTest is Test {
@@ -64,7 +64,6 @@ contract PoolSwapTest is Test {
         vm.stopPrank();
     }
     
-    // Cette fonction remplace nos calculs précédents pour être cohérente avec Math.getAmountOut
     function calculateExpectedOutput(uint256 amountIn, uint256 reserveIn, uint256 reserveOut, uint256 feeRate) internal pure returns (uint256) {
         uint256 amountInWithFee = amountIn * (10000 - feeRate);
         uint256 numerator = amountInWithFee * reserveOut;

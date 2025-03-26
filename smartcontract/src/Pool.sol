@@ -61,6 +61,22 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
     function balanceOf(address account) external view override returns (uint256) {
         return _balances[account];
     }
+
+    // Requirement: Calculate price with minimal rounding errors
+    // Used for calculating output amounts in swaps
+    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut, uint256 fee) internal pure returns (uint256) {
+        // Requirement: Ensure sufficient input amount
+        require(amountIn > 0, "Math: INSUFFICIENT_INPUT_AMOUNT");
+        // Requirement: Ensure pools have liquidity
+        require(reserveIn > 0 && reserveOut > 0, "Math: INSUFFICIENT_LIQUIDITY");
+        
+        // Adjust for fee (fee is in basis points, e.g. 30 = 0.3%)
+        uint256 amountInWithFee = amountIn * (10000 - fee);
+        uint256 numerator = amountInWithFee * reserveOut;
+        uint256 denominator = reserveIn * 10000 + amountInWithFee;
+        
+        return numerator / denominator;
+    }
     
     // Requirement: Protect against flash loan attacks and sandwich attacks
     // Updates reserves before any operation
@@ -148,7 +164,7 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         uint256 fee = IPoolFactory(factory).getFee();
         
         // Calculate output amount (this needs to account for both protocol and LP fees)
-        amountOut = Math.getAmountOut(amountIn, reserveIn, reserveOut, fee);
+        amountOut = getAmountOut(amountIn, reserveIn, reserveOut, fee);
         require(amountOut > 0, "Pool: insufficient output amount");
         
         // Calculate total fee amount

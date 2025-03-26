@@ -53,8 +53,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
     
     function getPool(address tokenA, address tokenB) external view override returns (address) {
-        (address token0, address token1) = _sortTokens(tokenA, tokenB);
-        return getPair[token0][token1];
+        return getPair[tokenA][tokenB];
     }
     
     function getFee() external view override returns (uint256) {

@@ -3,7 +3,7 @@ pragma solidity =0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/Pool.sol";
-import "../../src/TokenFactory.sol";
+import "../../src/mocks/TokenFactory.sol";    
 
 contract PoolInitializeTest is Test {
     address constant OWNER = address(1);

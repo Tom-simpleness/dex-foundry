@@ -4,7 +4,7 @@ pragma solidity =0.8.26;
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/PoolFactory.sol";
 import "../../src/Pool.sol";
-import "../../src/TokenFactory.sol";
+import "../../src/mocks/TokenFactory.sol";
 import "../../src/interfaces/IPoolFactory.sol";
 
 contract FactoryCreatePoolTest is Test {
