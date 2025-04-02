@@ -25,7 +25,7 @@ app.get('/', (_req, res) => {
   });
 });
 
-// Démarrage du serveur
+
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   
