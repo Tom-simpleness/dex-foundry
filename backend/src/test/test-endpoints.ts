@@ -1,4 +1,4 @@
-import * as dex from './dex';
+import * as dex from '../services/dex';
 
 // Fonction pour tester tous les endpoints
 export async function testAllEndpoints() {
