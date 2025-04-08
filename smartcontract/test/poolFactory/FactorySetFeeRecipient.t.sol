@@ -27,7 +27,6 @@ contract FactorySetFeeRecipientTest is Test {
         factory.setFeeRecipient(NEW_RECIPIENT);
         
         assertEq(factory.feeRecipient(), NEW_RECIPIENT);
-        assertEq(factory.getFeeRecipient(), NEW_RECIPIENT);
     }
     
     function test_setFeeRecipient_revertsWhenNotOwner() public {

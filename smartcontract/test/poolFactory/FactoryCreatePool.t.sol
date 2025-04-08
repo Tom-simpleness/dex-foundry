@@ -32,7 +32,7 @@ contract FactoryCreatePoolTest is Test {
         vm.startPrank(USER1);
         
         // Check initial state
-        address initialPool = factory.getPool(token1, token2);
+        address initialPool = factory.tokenPairToPoolAddress(token1, token2);
         assertEq(initialPool, address(0), "Pool should not exist yet");
         
         // Create pool
@@ -40,8 +40,8 @@ contract FactoryCreatePoolTest is Test {
         
         // Verify pool was created
         assertTrue(poolAddress != address(0), "Pool address should not be zero");
-        assertEq(factory.getPool(token1, token2), poolAddress, "Pool should be retrievable with getPool");
-        assertEq(factory.getPool(token2, token1), poolAddress, "Pool should be retrievable with tokens in reverse order");
+        assertEq(factory.tokenPairToPoolAddress(token1, token2), poolAddress, "Pool should be retrievable with tokenPairToPoolAddress");
+        assertEq(factory.tokenPairToPoolAddress(token2, token1), poolAddress, "Pool should be retrievable with tokens in reverse order");
         
         // Verify pool was initialized correctly
         Pool pool = Pool(poolAddress);
@@ -155,8 +155,8 @@ contract FactoryCreatePoolTest is Test {
         address pool2 = factory.createPool(token3, token4);
         
         // Verify both pools exist
-        assertEq(factory.getPool(token1, token2), pool1);
-        assertEq(factory.getPool(token3, token4), pool2);
+        assertEq(factory.tokenPairToPoolAddress(token1, token2), pool1);
+        assertEq(factory.tokenPairToPoolAddress(token3, token4), pool2);
     }
     
     function test_fuzz_createPool(uint8 tokenIdA, uint8 tokenIdB) public {
@@ -190,8 +190,8 @@ contract FactoryCreatePoolTest is Test {
         address poolAddress = factory.createPool(tokenA, tokenB);
         
         // Verify pool was created correctly
-        assertEq(factory.getPool(tokenA, tokenB), poolAddress);
-        assertEq(factory.getPool(tokenB, tokenA), poolAddress);
+        assertEq(factory.tokenPairToPoolAddress(tokenA, tokenB), poolAddress);
+        assertEq(factory.tokenPairToPoolAddress(tokenB, tokenA), poolAddress);
         
         vm.stopPrank();
     }

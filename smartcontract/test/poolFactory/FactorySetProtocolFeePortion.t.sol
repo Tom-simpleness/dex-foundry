@@ -28,7 +28,6 @@ contract FactorySetProtocolFeePortionTest is Test {
         factory.setProtocolFeePortion(newPortion);
         
         assertEq(factory.protocolFeePortion(), newPortion);
-        assertEq(factory.getProtocolFeePortion(), newPortion);
         assertNotEq(factory.protocolFeePortion(), initialPortion);
     }
     

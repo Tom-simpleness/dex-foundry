@@ -105,19 +105,19 @@ contract PoolGetReservesTest is Test {
         // Mock the factory address to return our test factory
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IPoolFactory.getFee.selector),
+            abi.encodeWithSelector(IPoolFactory.fee.selector),
             abi.encode(300)
         );
         
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IPoolFactory.getFeeRecipient.selector),
+            abi.encodeWithSelector(IPoolFactory.feeRecipient.selector),
             abi.encode(feeRecipient)
         );
 
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IPoolFactory.getProtocolFeePortion.selector),
+            abi.encodeWithSelector(IPoolFactory.protocolFeePortion.selector),
             abi.encode(10000) // 100% goes to protocol
         );
         
@@ -157,19 +157,19 @@ contract PoolGetReservesTest is Test {
         // Mock the factory address to return our test factory
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IPoolFactory.getFee.selector),
+            abi.encodeWithSelector(IPoolFactory.fee.selector),
             abi.encode(300)
         );
         
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IPoolFactory.getFeeRecipient.selector),
+            abi.encodeWithSelector(IPoolFactory.feeRecipient.selector),
             abi.encode(feeRecipient)
         );
         
         vm.mockCall(
             FACTORY,
-            abi.encodeWithSelector(IPoolFactory.getProtocolFeePortion.selector),
+            abi.encodeWithSelector(IPoolFactory.protocolFeePortion.selector),
             abi.encode(10000) // 100% goes to protocol
         );
         

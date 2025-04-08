@@ -161,7 +161,7 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         uint256 reserveOut = tokenIn == tokenA ? reserveB : reserveA;
         
         // Get fee from factory
-        uint256 fee = IPoolFactory(factory).getFee();
+        uint256 fee = IPoolFactory(factory).fee();
         
         // Calculate output amount (this needs to account for both protocol and LP fees)
         amountOut = getAmountOut(amountIn, reserveIn, reserveOut, fee);
@@ -171,14 +171,14 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         uint256 feeAmount = (amountIn * fee) / 10000;
         
         // Get protocol fee portion from factory (in basis points, e.g. 5000 = 50%)
-        uint256 protocolFeePortion = IPoolFactory(factory).getProtocolFeePortion();
+        uint256 protocolFeePortion = IPoolFactory(factory).protocolFeePortion();
         
         // Calculate protocol fee amount (portion that goes to fee recipient)
         uint256 protocolFeeAmount = (feeAmount * protocolFeePortion) / 10000;
         
         // Send protocol fee to fee recipient
         if (protocolFeeAmount > 0) {
-            address feeRecipient = IPoolFactory(factory).getFeeRecipient();
+            address feeRecipient = IPoolFactory(factory).feeRecipient();
             IERC20(tokenIn).safeTransferFrom(msg.sender, feeRecipient, protocolFeeAmount);
         }
         

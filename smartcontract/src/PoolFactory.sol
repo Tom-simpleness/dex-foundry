@@ -49,22 +49,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         emit PoolCreated(token0, token1, pool);
     }
     
-    function getPool(address tokenA, address tokenB) external view override returns (address) {
-        return tokenPairToPoolAddress[tokenA][tokenB];
-    }
-    
-    function getFee() external view override returns (uint256) {
-        return fee;
-    }
-    
-    function getFeeRecipient() external view override returns (address) {
-        return feeRecipient;
-    }
-    
-    function getProtocolFeePortion() external view returns (uint256) {
-        return protocolFeePortion;
-    }
-    
     // Requirement: Only owner can set fee recipient
     function setFeeRecipient(address _feeRecipient) external override onlyOwner {
         require(_feeRecipient != address(0), "Factory: zero address");

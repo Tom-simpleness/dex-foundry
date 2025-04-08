@@ -56,9 +56,9 @@ contract DexRouterTest is Test {
         
         // Ajouter de la liquidité au pool local
         vm.startPrank(OWNER);
-        TestToken(token1).approve(factory.getPool(token1, token2), type(uint256).max);
-        TestToken(token2).approve(factory.getPool(token1, token2), type(uint256).max);
-        Pool(factory.getPool(token1, token2)).addLiquidity(1_000 * 10**18, 1_000 * 10**18);
+        TestToken(token1).approve(factory.tokenPairToPoolAddress(token1, token2), type(uint256).max);
+        TestToken(token2).approve(factory.tokenPairToPoolAddress(token1, token2), type(uint256).max);
+        Pool(factory.tokenPairToPoolAddress(token1, token2)).addLiquidity(1_000 * 10**18, 1_000 * 10**18);
         vm.stopPrank();
     }
     

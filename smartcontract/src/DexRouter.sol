@@ -30,7 +30,7 @@ contract DexRouter {
         address recipient
     ) external returns (uint256) {
         // Try to get the pool from our factory
-        address pool = IPoolFactory(factory).getPool(tokenIn, tokenOut);
+        address pool = IPoolFactory(factory).tokenPairToPoolAddress(tokenIn, tokenOut);
         
         if (pool != address(0)) {
             // Pool exists in our DEX

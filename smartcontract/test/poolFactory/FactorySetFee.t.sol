@@ -26,7 +26,6 @@ contract FactorySetFeeTest is Test {
         factory.setFee(newFee);
         
         assertEq(factory.fee(), newFee);
-        assertEq(factory.getFee(), newFee);
         assertNotEq(factory.fee(), initialFee);
     }
     
