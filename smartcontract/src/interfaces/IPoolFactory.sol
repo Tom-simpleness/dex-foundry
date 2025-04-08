@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 interface IPoolFactory {
-    event PoolCreated(address indexed tokenA, address indexed tokenB, address pool, uint256 poolsCount);
+    event PoolCreated(address indexed tokenA, address indexed tokenB, address pool);
 
     function createPool(address tokenA, address tokenB) external returns (address pool);
     function getPool(address tokenA, address tokenB) external view returns (address pool);

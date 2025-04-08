@@ -46,7 +46,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         tokenPairToPoolAddress[token1][token0] = pool;
         allPairs.push(pool);
         
-        emit PoolCreated(token0, token1, pool, allPairs.length);
+        emit PoolCreated(token0, token1, pool);
     }
     
     function getPool(address tokenA, address tokenB) external view override returns (address) {

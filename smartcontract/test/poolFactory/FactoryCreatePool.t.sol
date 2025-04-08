@@ -65,7 +65,7 @@ contract FactoryCreatePoolTest is Test {
         
         // Check for event emission
         vm.expectEmit(true, true, true, false); // Check for indexed params
-        emit IPoolFactory.PoolCreated(token0, token1_, address(0), 1); // We don't check the pool address as we don't know it in advance
+        emit IPoolFactory.PoolCreated(token0, token1_, address(0)); // We don't check the pool address as we don't know it in advance
         
         // Create pool
         factory.createPool(token1, token2);
