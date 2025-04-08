@@ -1,4 +1,4 @@
-# Simple AMM/DEX - Foundry Project
+# AMM/DEX - Foundry Project
 
 A basic Automated Market Maker (AMM) / Decentralized Exchange (DEX) implementation, inspired by Uniswap V2 principles, built using the [Foundry](https://github.com/foundry-rs/foundry) development toolkit.
 
@@ -77,7 +77,6 @@ Please refer to the [Foundry Book](https://book.getfoundry.sh/) for detailed com
     *   ERCB Token: [`0x71686439C90B330A3cB15E77F8766675Ce8c6ee0`](https://sepolia.etherscan.io/address/0x71686439C90B330A3cB15E77F8766675Ce8c6ee0)
     *   ERCC Token: [`0x5329fdb58915b27A104eA8eCC24E3C871c6b6025`](https://sepolia.etherscan.io/address/0x5329fdb58915b27A104eA8eCC24E3C871c6b6025)
 
-*(Note: The DexRouter address is not listed here, consider adding it if deployed)*
 
 ## 📄 License
 
