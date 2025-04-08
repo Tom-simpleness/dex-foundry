@@ -176,9 +176,6 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         // Calculate protocol fee amount (portion that goes to fee recipient)
         uint256 protocolFeeAmount = (feeAmount * protocolFeePortion) / 10000;
         
-        // Calculate LP fee amount (portion that stays in the pool)
-        uint256 lpFeeAmount = feeAmount - protocolFeeAmount;
-        
         // Send protocol fee to fee recipient
         if (protocolFeeAmount > 0) {
             address feeRecipient = IPoolFactory(factory).getFeeRecipient();

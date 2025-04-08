@@ -87,7 +87,6 @@ contract PoolSwapTest is Test {
         // Calculate fee amounts
         uint256 totalFeeAmount = (SWAP_AMOUNT * FEE_RATE) / 10000;
         uint256 protocolFeeAmount = (totalFeeAmount * PROTOCOL_FEE_PORTION) / 10000;
-        uint256 lpFeeAmount = totalFeeAmount - protocolFeeAmount;
         
         // Execute swap: token1 -> token2
         uint256 amountOut = pool.swap(token1, SWAP_AMOUNT);
@@ -125,7 +124,6 @@ contract PoolSwapTest is Test {
         // Calculate fee amounts
         uint256 totalFeeAmount = (SWAP_AMOUNT * FEE_RATE) / 10000;
         uint256 protocolFeeAmount = (totalFeeAmount * PROTOCOL_FEE_PORTION) / 10000;
-        uint256 lpFeeAmount = totalFeeAmount - protocolFeeAmount;
         
         // Execute swap: token2 -> token1
         uint256 amountOut = pool.swap(token2, SWAP_AMOUNT);
@@ -328,9 +326,6 @@ contract PoolSwapTest is Test {
         vm.startPrank(USER2);
         pool.swap(token1, SWAP_AMOUNT);
         vm.stopPrank();
-        
-        // Calculate total fee
-        uint256 totalFeeAmount = (SWAP_AMOUNT * FEE_RATE) / 10000;
         
         // Verify fee recipient got nothing
         assertEq(TestToken(token1).balanceOf(FEE_RECIPIENT), initialFeeRecipient, "Fee recipient should not receive any fees");
