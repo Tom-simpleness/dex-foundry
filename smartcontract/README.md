@@ -81,4 +81,4 @@ Please refer to the [Foundry Book](https://book.getfoundry.sh/) for detailed com
 
 ## 📄 License
 
-[Specify your license here, e.g., MIT]
+This project is licensed under the MIT License.
