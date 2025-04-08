@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.26;
 
 library Math {
     // Requirement: Prevent overflow and maintain precision in calculations
