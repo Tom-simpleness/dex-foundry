@@ -6,7 +6,7 @@ import "./interfaces/IPoolFactory.sol";
 import "./Pool.sol";
 
 contract PoolFactory is IPoolFactory, Ownable {
-    mapping(address => mapping(address => address)) public getPair;
+    mapping(address => mapping(address => address)) public tokenPairToPoolAddress;
     address[] public allPairs;
     uint256 public fee = 30; // 0.3% fee
     address public feeRecipient;
@@ -29,7 +29,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         (address token0, address token1) = _sortTokens(tokenA, tokenB);
         
         // Requirement: Prevent duplicate pools
-        require(getPair[token0][token1] == address(0), "Factory: pool exists");
+        require(tokenPairToPoolAddress[token0][token1] == address(0), "Factory: pool exists");
         
         // Create a new pool
         bytes memory bytecode = type(Pool).creationCode;
@@ -42,8 +42,8 @@ contract PoolFactory is IPoolFactory, Ownable {
         Pool(pool).initialize(token0, token1, address(this));
         
         // Store pool address in mapping
-        getPair[token0][token1] = pool;
-        getPair[token1][token0] = pool;
+        tokenPairToPoolAddress[token0][token1] = pool;
+        tokenPairToPoolAddress[token1][token0] = pool;
         allPairs.push(pool);
         
         // Transfer ownership to this factory
@@ -53,7 +53,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
     
     function getPool(address tokenA, address tokenB) external view override returns (address) {
-        return getPair[tokenA][tokenB];
+        return tokenPairToPoolAddress[tokenA][tokenB];
     }
     
     function getFee() external view override returns (uint256) {
