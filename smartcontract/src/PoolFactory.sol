@@ -46,9 +46,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         tokenPairToPoolAddress[token1][token0] = pool;
         allPairs.push(pool);
         
-        // Transfer ownership to this factory
-        Pool(pool).transferOwnership(address(this));
-        
         emit PoolCreated(token0, token1, pool, allPairs.length);
     }
     
