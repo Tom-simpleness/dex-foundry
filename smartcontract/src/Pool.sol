@@ -36,8 +36,6 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
     // Requirement: Pool must be initialized with tokens and factory only once
     function initialize(address _tokenA, address _tokenB, address _factory) external override onlyOwner {
         require(!initialized, "Pool: already initialized");
-        require(_tokenA != address(0) && _tokenB != address(0), "Pool: zero address");
-        require(_tokenA != _tokenB, "Pool: identical addresses");
         
         tokenA = _tokenA;
         tokenB = _tokenB;
@@ -64,7 +62,7 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
 
     // Requirement: Calculate price with minimal rounding errors
     // Used for calculating output amounts in swaps
-    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut, uint256 fee) internal pure returns (uint256) {
+    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut, uint256 fee) private pure returns (uint256) {
         // Requirement: Ensure sufficient input amount
         require(amountIn > 0, "Math: INSUFFICIENT_INPUT_AMOUNT");
         // Requirement: Ensure pools have liquidity
