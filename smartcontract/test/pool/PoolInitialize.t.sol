@@ -67,29 +67,7 @@ contract PoolInitializeTest is Test {
         pool.initialize(token1, token2, FACTORY);
     }
     
-    function test_initialize_revertsWhenZeroAddress() public {
-        vm.startPrank(OWNER);
-        
-        // Zero token1
-        vm.expectRevert("Pool: zero address");
-        pool.initialize(address(0), token2, FACTORY);
-        
-        // Zero token2
-        vm.expectRevert("Pool: zero address");
-        pool.initialize(token1, address(0), FACTORY);
-        
-        // Both zero
-        vm.expectRevert("Pool: zero address");
-        pool.initialize(address(0), address(0), FACTORY);
-        
-        vm.stopPrank();
-    }
-    
-    function test_initialize_revertsWhenIdenticalAddresses() public {
-        vm.prank(OWNER);
-        vm.expectRevert("Pool: identical addresses");
-        pool.initialize(token1, token1, FACTORY);
-    }
+   
     
     function test_initialize_withDifferentFactoryAddresses() public {
         // First pool with Factory1

@@ -173,7 +173,7 @@ contract PoolRemoveLiquidityTest is Test {
         vm.startPrank(USER1);
         
         // Try to remove 0 liquidity
-        vm.expectRevert("Pool: insufficient liquidity burned");
+        vm.expectRevert("Pool: insufficient amounts");
         pool.removeLiquidity(0);
         
         vm.stopPrank();

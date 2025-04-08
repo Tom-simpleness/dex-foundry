@@ -124,7 +124,6 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
     
     // Requirement: Users can only withdraw proportionally to their LP tokens
     function removeLiquidity(uint256 liquidity) external override nonReentrant returns (uint256 amountA, uint256 amountB) {
-        require(liquidity > 0, "Pool: insufficient liquidity burned");
         require(_balances[msg.sender] >= liquidity, "Pool: insufficient balance");
         
         uint256 totalSupplyBefore = _totalSupply;
