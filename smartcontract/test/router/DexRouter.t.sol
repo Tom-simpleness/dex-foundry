@@ -130,25 +130,9 @@ contract DexRouterTest is Test {
         
         assertEq(router.forwardingFee(), 100);
         
-        vm.prank(USER);
-        vm.expectRevert("Not owner");
+        vm.startPrank(USER);
+        vm.expectRevert("DexRouter: Not factory owner");
         router.setForwardingFee(50);
-    }
-    
-    function test_setOwner() public {
-        vm.prank(OWNER);
-        router.setOwner(USER);
-        
-        assertEq(router.owner(), USER);
-        
-        // L'ancien owner ne peut plus changer le fee
-        vm.prank(OWNER);
-        vm.expectRevert("Not owner");
-        router.setForwardingFee(100);
-        
-        // Le nouveau owner peut changer le fee
-        vm.prank(USER);
-        router.setForwardingFee(100);
-        assertEq(router.forwardingFee(), 100);
+        vm.stopPrank();
     }
 }

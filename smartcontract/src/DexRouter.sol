@@ -7,14 +7,15 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IPoolFactory.sol";
 import "./interfaces/IPool.sol";
+import "./interfaces/IDexRouter.sol";
 
 
-contract DexRouter {
+contract DexRouter is IDexRouter {
     using SafeERC20 for IERC20;
     
-    address public immutable factory;
-    address public immutable uniswapRouter;
-    uint256 public forwardingFee = 50; // 0.5% additional fee
+    address public immutable override factory;
+    address public immutable override uniswapRouter;
+    uint256 public override forwardingFee = 50; // 0.5% additional fee
     
     constructor(address _factory, address _uniswapRouter) {
         require(_factory != address(0), "DexRouter: Invalid factory address");
@@ -29,7 +30,7 @@ contract DexRouter {
         uint256 amountIn,
         uint256 minAmountOut,
         address recipient
-    ) external returns (uint256) {
+    ) external override returns (uint256 amountOut) {
         // Try to get the pool from our factory
         address pool = IPoolFactory(factory).tokenPairToPoolAddress(tokenIn, tokenOut);
         
@@ -101,7 +102,7 @@ contract DexRouter {
         return amounts[amounts.length - 1]; // Return last amount (amountOut)
     }
     
-    function setForwardingFee(uint256 _fee) external {
+    function setForwardingFee(uint256 _fee) external override {
         require(msg.sender == Ownable(factory).owner(), "DexRouter: Not factory owner");
         require(_fee <= 200, "DexRouter: Fee too high"); // Max 2%
         forwardingFee = _fee;
