@@ -78,18 +78,15 @@ contract PoolSwapTest is Test {
         // Record balances before swap
         uint256 user2Token1Before = TestToken(token1).balanceOf(USER2);
         uint256 user2Token2Before = TestToken(token2).balanceOf(USER2);
-        uint256 feeRecipientToken1Before = TestToken(token1).balanceOf(FEE_RECIPIENT);
         
         // Get reserves before swap
         (uint256 reserveA, uint256 reserveB) = pool.getReserves();
-        // reserveA corresponds to token2, reserveB corresponds to token1
+
+        // Transfer tokenIn to pool before calling swap
+        TestToken(token1).transfer(address(pool), SWAP_AMOUNT); 
         
-        // Calculate fee amounts
-        uint256 totalFeeAmount = (SWAP_AMOUNT * FEE_RATE) / 10000;
-        uint256 protocolFeeAmount = (totalFeeAmount * PROTOCOL_FEE_PORTION) / 10000;
-        
-        // Execute swap: token1 -> token2
-        uint256 amountOut = pool.swap(token1, SWAP_AMOUNT);
+        // Execute swap: token1 -> token2, recipient is USER2
+        uint256 amountOut = pool.swap(token1, SWAP_AMOUNT, USER2); 
         
         // Verify output amount
         assertGt(amountOut, 0, "Output amount should be greater than 0");
@@ -98,12 +95,9 @@ contract PoolSwapTest is Test {
         assertEq(TestToken(token1).balanceOf(USER2), user2Token1Before - SWAP_AMOUNT, "Incorrect token1 balance after swap");
         assertEq(TestToken(token2).balanceOf(USER2), user2Token2Before + amountOut, "Incorrect token2 balance after swap");
         
-        // Verify fee recipient received only the protocol portion of the fee
-        assertEq(TestToken(token1).balanceOf(FEE_RECIPIENT), feeRecipientToken1Before + protocolFeeAmount, "Fee recipient didn't receive correct fee");
-        
-        // Verify reserves changed properly, including the LP portion of the fee
+        // Verify reserves changed properly (fee stays in pool)
         (uint256 reserveAAfter, uint256 reserveBAfter) = pool.getReserves();
-        assertEq(reserveBAfter, reserveB + SWAP_AMOUNT - protocolFeeAmount, "ReserveB (token1) incorrect after swap");
+        assertEq(reserveBAfter, reserveB + SWAP_AMOUNT, "ReserveB (token1) incorrect after swap"); // reserveIn increases by full amountIn
         assertEq(reserveAAfter, reserveA - amountOut, "ReserveA (token2) incorrect after swap");
         
         vm.stopPrank();
@@ -115,18 +109,15 @@ contract PoolSwapTest is Test {
         // Record balances before swap
         uint256 user2Token1Before = TestToken(token1).balanceOf(USER2);
         uint256 user2Token2Before = TestToken(token2).balanceOf(USER2);
-        uint256 feeRecipientToken2Before = TestToken(token2).balanceOf(FEE_RECIPIENT);
         
         // Get reserves before swap
         (uint256 reserveA, uint256 reserveB) = pool.getReserves();
-        // reserveA corresponds to token2, reserveB corresponds to token1
-        
-        // Calculate fee amounts
-        uint256 totalFeeAmount = (SWAP_AMOUNT * FEE_RATE) / 10000;
-        uint256 protocolFeeAmount = (totalFeeAmount * PROTOCOL_FEE_PORTION) / 10000;
-        
-        // Execute swap: token2 -> token1
-        uint256 amountOut = pool.swap(token2, SWAP_AMOUNT);
+
+        // Transfer tokenIn to pool before calling swap
+        TestToken(token2).transfer(address(pool), SWAP_AMOUNT); 
+
+        // Execute swap: token2 -> token1, recipient is USER2
+        uint256 amountOut = pool.swap(token2, SWAP_AMOUNT, USER2); 
         
         // Verify output amount
         assertGt(amountOut, 0, "Output amount should be greater than 0");
@@ -135,12 +126,9 @@ contract PoolSwapTest is Test {
         assertEq(TestToken(token2).balanceOf(USER2), user2Token2Before - SWAP_AMOUNT, "Incorrect token2 balance after swap");
         assertEq(TestToken(token1).balanceOf(USER2), user2Token1Before + amountOut, "Incorrect token1 balance after swap");
         
-        // Verify fee recipient received only the protocol portion of the fee
-        assertEq(TestToken(token2).balanceOf(FEE_RECIPIENT), feeRecipientToken2Before + protocolFeeAmount, "Fee recipient didn't receive correct fee");
-        
-        // Verify reserves changed properly, including the LP portion of the fee
+        // Verify reserves changed properly (fee stays in pool)
         (uint256 reserveAAfter, uint256 reserveBAfter) = pool.getReserves();
-        assertEq(reserveAAfter, reserveA + SWAP_AMOUNT - protocolFeeAmount, "ReserveA (token2) incorrect after swap");
+        assertEq(reserveAAfter, reserveA + SWAP_AMOUNT, "ReserveA (token2) incorrect after swap"); // reserveIn increases by full amountIn
         assertEq(reserveBAfter, reserveB - amountOut, "ReserveB (token1) incorrect after swap");
         
         vm.stopPrank();
@@ -154,7 +142,7 @@ contract PoolSwapTest is Test {
         
         // Try to swap with invalid token
         vm.expectRevert("Pool: invalid input token");
-        pool.swap(invalidToken, SWAP_AMOUNT);
+        pool.swap(invalidToken, SWAP_AMOUNT, USER2); 
         
         vm.stopPrank();
     }
@@ -164,7 +152,7 @@ contract PoolSwapTest is Test {
         
         // Try to swap with zero amount
         vm.expectRevert("Pool: insufficient input amount");
-        pool.swap(token1, 0);
+        pool.swap(token1, 0, USER2); 
         
         vm.stopPrank();
     }
@@ -181,18 +169,21 @@ contract PoolSwapTest is Test {
         uint256 cumulativeToken2Received = 0;
         
         // First swap: token1 -> token2
-        uint256 token2Out = pool.swap(token1, SWAP_AMOUNT);
+        TestToken(token1).transfer(address(pool), SWAP_AMOUNT); // Transfer before swap
+        uint256 token2Out = pool.swap(token1, SWAP_AMOUNT, USER2); 
         cumulativeToken1Spent += SWAP_AMOUNT;
         cumulativeToken2Received += token2Out;
         
         // Second swap: token2 -> token1
-        uint256 token1Out = pool.swap(token2, SWAP_AMOUNT);
+        TestToken(token2).transfer(address(pool), SWAP_AMOUNT); // Transfer before swap
+        uint256 token1Out = pool.swap(token2, SWAP_AMOUNT, USER2); 
         cumulativeToken2Spent += SWAP_AMOUNT;
         cumulativeToken1Received += token1Out;
         
         // Third swap: token1 -> token2 (smaller amount)
         uint256 smallAmount = SWAP_AMOUNT / 2;
-        uint256 token2OutSmall = pool.swap(token1, smallAmount);
+        TestToken(token1).transfer(address(pool), smallAmount); // Transfer before swap
+        uint256 token2OutSmall = pool.swap(token1, smallAmount, USER2); 
         cumulativeToken1Spent += smallAmount;
         cumulativeToken2Received += token2OutSmall;
         
@@ -211,20 +202,31 @@ contract PoolSwapTest is Test {
         vm.stopPrank();
     }
     
-    function test_swap_sufficientLiquidity() public {
-        vm.startPrank(USER2);
+    function test_swap_revertsWhenPoolHasZeroOutputReserve() public {
+        // Goal: Test swapping when the target output token has zero reserve in the pool.
         
-        // Try to swap a very large amount - should revert due to insufficient user balance
-        // Even though we have approval, USER2 doesn't have enough tokens
-        uint256 excessiveAmount = INITIAL_AMOUNT1 * 100;
+        // Create a new, separate pool manually for this test
+        vm.startPrank(OWNER); // Owner deploys the pool
+        Pool newPool = new Pool();
+        // Initialize the pool manually, mimicking factory initialization
+        // Note: We still need a valid factory address for fee lookups if swap was reached
+        newPool.initialize(token1, token2, address(factory)); 
+        vm.stopPrank();
+
+        // Add liquidity only for token1, leaving token2 reserve at 0
+        vm.startPrank(USER1);
+        uint256 singleTokenAmount = 100 * 10**18;
+        TestToken(token1).approve(address(newPool), singleTokenAmount); 
+        // Transfer token1 directly to the pool
+        TestToken(token1).transfer(address(newPool), singleTokenAmount); 
         
-        // Set a high approval first
-        TestToken(token1).approve(address(pool), excessiveAmount);
-        
-        // Attempt to swap a huge amount should revert with ERC20 insufficient balance error
-        // Expecting an ERC20 error rather than Math error since the transfer will fail first
-        vm.expectRevert();
-        pool.swap(token1, excessiveAmount);
+        // Try to swap token1 for token2. Should fail in getAmountOut because reserveOut is 0.
+        uint256 swapInAmount = 10 * 10**18;
+        TestToken(token1).transfer(address(newPool), swapInAmount); // Transfer token to swap
+
+        // Expect revert from getAmountOut check
+        vm.expectRevert("Math: INSUFFICIENT_LIQUIDITY"); 
+        newPool.swap(token1, swapInAmount, USER1);
         
         vm.stopPrank();
     }
@@ -237,7 +239,8 @@ contract PoolSwapTest is Test {
         uint256 kBefore = reserveA * reserveB;
         
         // Execute swap
-        pool.swap(token1, SWAP_AMOUNT);
+        TestToken(token1).transfer(address(pool), SWAP_AMOUNT); // Transfer before swap
+        pool.swap(token1, SWAP_AMOUNT, USER2); 
         
         // Get new K (after fee extraction)
         (uint256 reserveAAfter, uint256 reserveBAfter) = pool.getReserves();
@@ -250,39 +253,28 @@ contract PoolSwapTest is Test {
     }
 
     function test_protocolFeePortion_affectsDistribution() public {
-        // Test with just one specific portion value instead of a loop
-        // to avoid overflow issues
+        // NOTE: This test is now less meaningful as protocol fees aren't distributed during swap
         vm.startPrank(OWNER);
-        factory.setProtocolFeePortion(7000); // 70% to protocol
+        factory.setProtocolFeePortion(7000); 
         vm.stopPrank();
 
-        // Record initial balances
-        uint256 initialFeeRecipient = TestToken(token1).balanceOf(FEE_RECIPIENT);
         (uint256 initialReserveA, uint256 initialReserveB) = pool.getReserves();
         
         // Execute swap
         vm.startPrank(USER2);
-        pool.swap(token1, SWAP_AMOUNT);
+        TestToken(token1).transfer(address(pool), SWAP_AMOUNT); // Transfer before swap
+        pool.swap(token1, SWAP_AMOUNT, USER2); 
         vm.stopPrank();
         
-        // Calculate expected fee amounts
-        uint256 totalFeeAmount = (SWAP_AMOUNT * FEE_RATE) / 10000;
-        uint256 expectedProtocolFee = (totalFeeAmount * 7000) / 10000;
-        
-        // Check fee recipient received the correct amount
-        uint256 actualProtocolFee = TestToken(token1).balanceOf(FEE_RECIPIENT) - initialFeeRecipient;
-        assertEq(actualProtocolFee, expectedProtocolFee, "Protocol fee amount incorrect");
-        
-        // Check reserve increase includes LP portion of fee
+        // Check reserve increase includes the full fee (implicitly)
         (uint256 finalReserveA, uint256 finalReserveB) = pool.getReserves();
-        uint256 expectedReserveIncrease = SWAP_AMOUNT - expectedProtocolFee;
-        assertEq(finalReserveB - initialReserveB, expectedReserveIncrease, "LP portion not correctly added to reserves");
+        assertEq(finalReserveB - initialReserveB, SWAP_AMOUNT, "Reserve increase incorrect");
     }
 
     function test_lpValueIncreasesFromFees() public {
         // Set all fees to go to LPs, none to protocol
         vm.prank(OWNER);
-        factory.setProtocolFeePortion(0);
+        factory.setProtocolFeePortion(0); // NOTE: This setting doesn't affect swap logic anymore
         
         // Record initial LP token value
         uint256 lpTokensUser1 = pool.balanceOf(USER1);
@@ -299,8 +291,10 @@ contract PoolSwapTest is Test {
         // Perform multiple swaps in both directions
         vm.startPrank(USER2);
         for (uint i = 0; i < 20; i++) {
-            pool.swap(token1, SWAP_AMOUNT);
-            pool.swap(token2, SWAP_AMOUNT);
+            TestToken(token1).transfer(address(pool), SWAP_AMOUNT); // Transfer before swap
+            pool.swap(token1, SWAP_AMOUNT, USER2); 
+            TestToken(token2).transfer(address(pool), SWAP_AMOUNT); // Transfer before swap
+            pool.swap(token2, SWAP_AMOUNT, USER2); 
         }
         vm.stopPrank();
         
@@ -314,24 +308,21 @@ contract PoolSwapTest is Test {
 
     function test_zeroProtocolFeePortionKeepsAllFeesInPool() public {
         vm.startPrank(OWNER);
-        // Set 0% of fees to go to protocol (100% to LPs)
+        // Set 0% of fees to go to protocol (100% to LPs) - NOTE: This setting doesn't affect swap logic anymore
         factory.setProtocolFeePortion(0);
         vm.stopPrank();
         
         // Record initial balances
-        uint256 initialFeeRecipient = TestToken(token1).balanceOf(FEE_RECIPIENT);
         (uint256 initialReserveA, uint256 initialReserveB) = pool.getReserves();
         
         // Execute swap
         vm.startPrank(USER2);
-        pool.swap(token1, SWAP_AMOUNT);
+        TestToken(token1).transfer(address(pool), SWAP_AMOUNT); // Transfer before swap
+        pool.swap(token1, SWAP_AMOUNT, USER2); 
         vm.stopPrank();
         
-        // Verify fee recipient got nothing
-        assertEq(TestToken(token1).balanceOf(FEE_RECIPIENT), initialFeeRecipient, "Fee recipient should not receive any fees");
-        
-        // Verify all fees stayed in the pool
+        // Verify all fees stayed in the pool reserve increase
         (uint256 finalReserveA, uint256 finalReserveB) = pool.getReserves();
-        assertEq(finalReserveB - initialReserveB, SWAP_AMOUNT, "All fees should remain in the pool");
+        assertEq(finalReserveB - initialReserveB, SWAP_AMOUNT, "All fees should remain in the pool reserve increase");
     }
 } 

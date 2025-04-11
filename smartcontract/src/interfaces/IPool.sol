@@ -9,7 +9,7 @@ interface IPool {
     function initialize(address _tokenA, address _tokenB, address _factory) external;
     function addLiquidity(uint256 amountA, uint256 amountB) external returns (uint256 liquidity);
     function removeLiquidity(uint256 liquidity) external returns (uint256 amountA, uint256 amountB);
-    function swap(address tokenIn, uint256 amountIn) external returns (uint256 amountOut);
+    function swap(address tokenIn, uint256 amountIn, address recipient) external returns (uint256 amountOut);
     function getReserves() external view returns (uint256 reserveA, uint256 reserveB);
     function getTokens() external view returns (address tokenA, address tokenB);
     function totalSupply() external view returns (uint256);

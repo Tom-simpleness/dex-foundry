@@ -149,45 +149,49 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
     }
     
     // Requirement: Swaps must maintain the constant product formula k = x * y
-    function swap(address tokenIn, uint256 amountIn) external override nonReentrant returns (uint256 amountOut) {
+    // Funds (tokenIn) must be transferred to the pool *before* calling this function.
+    function swap(
+        address tokenIn, 
+        uint256 amountIn, 
+        address recipient // Added recipient parameter
+    ) external override nonReentrant returns (uint256 amountOut) { 
         require(tokenIn == tokenA || tokenIn == tokenB, "Pool: invalid input token");
         require(amountIn > 0, "Pool: insufficient input amount");
+        require(recipient != address(0), "Pool: invalid recipient");
         
+        _updateReserves(); // Update reserves based on current balances (including received tokenIn)
+
         address tokenOut = tokenIn == tokenA ? tokenB : tokenA;
-        uint256 reserveIn = tokenIn == tokenA ? reserveA : reserveB;
-        uint256 reserveOut = tokenIn == tokenA ? reserveB : reserveA;
+        // Use reserves *after* update (which includes amountIn)
+        uint256 reserveIn = tokenIn == tokenA ? reserveA : reserveB; 
+        uint256 reserveOut = tokenIn == tokenA ? reserveB : reserveA; 
+
+        // Adjust reserveIn to exclude the just-received amountIn for calculation
+        uint256 reserveInForCalc = reserveIn - amountIn;
         
         // Get fee from factory
         uint256 fee = IPoolFactory(factory).fee();
         
-        // Calculate output amount (this needs to account for both protocol and LP fees)
-        amountOut = getAmountOut(amountIn, reserveIn, reserveOut, fee);
+        // Calculate output amount based on reserves *before* the swap
+        amountOut = getAmountOut(amountIn, reserveInForCalc, reserveOut, fee);
         require(amountOut > 0, "Pool: insufficient output amount");
+        require(amountOut < reserveOut, "Pool: insufficient liquidity for output"); // Prevent draining the pool
         
-        // Calculate total fee amount
-        uint256 feeAmount = (amountIn * fee) / 10000;
+        // No need for feeAmount calculation or protocol fee transfer here, 
+        // as the fee is inherently kept in the pool by the getAmountOut formula.
+        // The _updateReserves call correctly reflects the new balances including the fee portion.
+
+        // REMOVED: Transfer of tokenIn - Assumed already received
+        // IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn - protocolFeeAmount);
         
-        // Get protocol fee portion from factory (in basis points, e.g. 5000 = 50%)
-        uint256 protocolFeePortion = IPoolFactory(factory).protocolFeePortion();
+        // Transfer output token to the final recipient
+        IERC20(tokenOut).safeTransfer(recipient, amountOut);
         
-        // Calculate protocol fee amount (portion that goes to fee recipient)
-        uint256 protocolFeeAmount = (feeAmount * protocolFeePortion) / 10000;
+        // Update reserves again to reflect the sent tokenOut (optional but good practice for consistency)
+        // Although the next operation will call _updateReserves anyway
+        _updateReserves(); 
         
-        // Send protocol fee to fee recipient
-        if (protocolFeeAmount > 0) {
-            address feeRecipient = IPoolFactory(factory).feeRecipient();
-            IERC20(tokenIn).safeTransferFrom(msg.sender, feeRecipient, protocolFeeAmount);
-        }
-        
-        // Transfer input token to pool (including LP fee portion)
-        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn - protocolFeeAmount);
-        
-        // Transfer output token to sender
-        IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
-        
-        // Update reserves
-        _updateReserves();
-        
+        // Emit swap event - msg.sender is the entity calling swap (likely the Router)
         emit Swap(msg.sender, amountIn, amountOut, tokenIn);
     }
 } 

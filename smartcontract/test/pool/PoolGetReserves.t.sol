@@ -11,7 +11,8 @@ import "../../src/interfaces/IPoolFactory.sol";
 contract PoolGetReservesTest is Test {
     address constant OWNER = address(1);
     address constant USER1 = address(2);
-    address constant FACTORY = address(3);
+    address constant USER2 = address(3);
+    address constant FACTORY = address(4);
     
     Pool public pool;
     TokenFactory public tokenFactory;
@@ -43,6 +44,15 @@ contract PoolGetReservesTest is Test {
         TestToken(token1).approve(address(pool), type(uint256).max);
         TestToken(token2).approve(address(pool), type(uint256).max);
         vm.stopPrank();
+    }
+    
+    // Helper function to calculate expected output based on reserves and fee
+    function calculateExpectedOutput(uint256 amountIn, uint256 reserveIn, uint256 reserveOut, uint256 feeRate) internal pure returns (uint256) {
+        uint256 amountInWithFee = amountIn * (10000 - feeRate);
+        uint256 numerator = amountInWithFee * reserveOut;
+        uint256 denominator = reserveIn * 10000 + amountInWithFee;
+        
+        return numerator / denominator;
     }
     
     function test_getReserves_initialState() public {
@@ -108,13 +118,11 @@ contract PoolGetReservesTest is Test {
             abi.encodeWithSelector(IPoolFactory.fee.selector),
             abi.encode(300)
         );
-        
         vm.mockCall(
             FACTORY,
             abi.encodeWithSelector(IPoolFactory.feeRecipient.selector),
             abi.encode(feeRecipient)
         );
-
         vm.mockCall(
             FACTORY,
             abi.encodeWithSelector(IPoolFactory.protocolFeePortion.selector),
@@ -127,21 +135,23 @@ contract PoolGetReservesTest is Test {
         // Perform a swap
         uint256 swapAmount = 1_000 * 10**18;
         vm.startPrank(USER1);
-        uint256 outputAmount = pool.swap(token1, swapAmount);
+        uint256 fee = factoryContract.fee(); // Get fee from factory
+        // Corrected reserve order: reserveIn=reserveBefore1, reserveOut=reserveBefore2
+        uint256 expectedOutput = calculateExpectedOutput(swapAmount, reserveBefore1, reserveBefore2, fee);
+        
+        // Transfer tokenIn to pool before calling swap
+        TestToken(token1).transfer(address(pool), swapAmount);
+        
+        uint256 outputAmount = pool.swap(token1, swapAmount, USER1); // Call swap
+        assertApproxEqAbs(outputAmount, expectedOutput, 1, "Calculated output amount mismatch");
         vm.stopPrank();
         
         // Get reserves after swap
         (uint256 reserveAfter1, uint256 reserveAfter2) = pool.getReserves();
         
-        // Calculate expected fee and amount that should be added to reserve
-        uint256 fee = (swapAmount * 300) / 10000; // 0.3% fee
-        uint256 expectedAmountAddedToReserve = swapAmount - fee;
-        
-        // Verify reserves changed correctly
-        assertEq(reserveAfter1, reserveBefore1 + expectedAmountAddedToReserve, 
-                "Reserve1 should increase by swap amount minus fee");
-        assertEq(reserveAfter2, reserveBefore2 - outputAmount, 
-                "Reserve2 should decrease by output amount");
+        // Verify reserves changed according to swap amounts
+        assertEq(reserveAfter1, reserveBefore1 + swapAmount, "Reserve A (token1) should increase by swap amount");
+        assertEq(reserveAfter2, reserveBefore2 - outputAmount, "Reserve B (token2) should decrease by output amount");
     }
     
     function test_getReserves_multipleOperations() public {
@@ -153,7 +163,7 @@ contract PoolGetReservesTest is Test {
         factoryContract.setFeeRecipient(feeRecipient);
         factoryContract.setProtocolFeePortion(10000); // 100% to protocol
         vm.stopPrank();
-        
+
         // Mock the factory address to return our test factory
         vm.mockCall(
             FACTORY,
@@ -181,7 +191,8 @@ contract PoolGetReservesTest is Test {
         
         // First swap: token1 to token2
         uint256 swapAmount1 = 5_000 * 10**18;
-        pool.swap(token1, swapAmount1);
+        TestToken(token1).transfer(address(pool), swapAmount1); // Transfer token1 before swap
+        pool.swap(token1, swapAmount1, USER1); // Call swap
         
         // Get reserves after first operation sequence
         (uint256 reserve1After1, uint256 reserve2After1) = pool.getReserves();
@@ -189,6 +200,7 @@ contract PoolGetReservesTest is Test {
         // Add more liquidity
         uint256 additionalAmount1 = 10_000 * 10**18;
         uint256 additionalAmount2 = 15_000 * 10**18;
+        // Correction: addLiquidity uses transferFrom, no manual transfer needed before it.
         pool.addLiquidity(additionalAmount1, additionalAmount2);
         
         // Get reserves after second operation
@@ -196,7 +208,8 @@ contract PoolGetReservesTest is Test {
         
         // Second swap: token2 to token1
         uint256 swapAmount2 = 8_000 * 10**18;
-        pool.swap(token2, swapAmount2);
+        TestToken(token2).transfer(address(pool), swapAmount2); // Transfer token2 before swap
+        pool.swap(token2, swapAmount2, USER1); // Call swap
         
         // Get reserves after third operation
         (uint256 reserve1After3, uint256 reserve2After3) = pool.getReserves();

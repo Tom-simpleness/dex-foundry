@@ -185,7 +185,7 @@ contract PoolGetTokensTest is Test {
         pool.addLiquidity(10_000 * 10**18, 10_000 * 10**18);
         
         // Perform a swap
-        pool.swap(token1, 1_000 * 10**18);
+        pool.swap(token1, 1_000 * 10**18, USER1);
         
         // Remove liquidity
         uint256 liquidity = pool.balanceOf(USER1) / 2;
