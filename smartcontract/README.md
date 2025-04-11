@@ -40,8 +40,8 @@ This project features a `PoolFactory` for creating liquidity pools and a `DexRou
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repository-url>
-    cd <your-repository-directory>/smartcontract
+    git clone https://github.com/Tom-simpleness/dex-foundry
+    cd dex-foundry/smartcontract
     ```
 
 2.  **Install dependencies:**
