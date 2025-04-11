@@ -2,9 +2,11 @@
 pragma solidity 0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
+import {stdMath} from "forge-std/StdMath.sol";
 import "../../src/Pool.sol";
 import "../../src/mocks/TokenFactory.sol";
 import "../../src/interfaces/IPool.sol";
+import "../../src/lib/Math.sol"; // Import Math for sqrt AND min
 
 contract PoolAddLiquidityTest is Test {
     address constant OWNER = address(1);
@@ -17,9 +19,9 @@ contract PoolAddLiquidityTest is Test {
     address public token1;
     address public token2;
     
-    // Common liquidity values for testing
-    uint256 constant AMOUNT1 = 100_000 * 10**18;
-    uint256 constant AMOUNT2 = 200_000 * 10**18;
+    // Common test values
+    uint256 constant AMOUNT1 = 100_000 * 10**18; // 100K
+    uint256 constant AMOUNT2 = 200_000 * 10**18; // 200K
     
     function setUp() public {
         // Deploy token factory and create test tokens
@@ -54,29 +56,29 @@ contract PoolAddLiquidityTest is Test {
     function test_addLiquidity_initialLiquidity() public {
         vm.startPrank(USER1);
         
-        // Check initial state
-        assertEq(pool.totalSupply(), 0, "Initial liquidity should be 0");
+        // Calculate expected liquidity without MINIMUM_LIQUIDITY
+        uint256 expectedLiquidity = Math.sqrt(AMOUNT1 * AMOUNT2);
         
-        // Expect event emission
+        // Expect event emission with the corrected liquidity value
         vm.expectEmit(true, true, true, true);
-        emit IPool.LiquidityAdded(USER1, AMOUNT1, AMOUNT2, sqrt(AMOUNT1 * AMOUNT2) - 1000);
+        emit IPool.LiquidityAdded(USER1, AMOUNT1, AMOUNT2, expectedLiquidity);
         
         // Add initial liquidity
-        uint256 liquidity = pool.addLiquidity(AMOUNT1, AMOUNT2);
+        uint256 actualLiquidity = pool.addLiquidity(AMOUNT1, AMOUNT2);
         
-        // Verify liquidity tokens minted
-        uint256 expectedLiquidity = sqrt(AMOUNT1 * AMOUNT2) - 1000; // Subtracting MINIMUM_LIQUIDITY
-        assertEq(liquidity, expectedLiquidity, "Incorrect liquidity minted");
+        // Verify liquidity minted
+        assertEq(actualLiquidity, expectedLiquidity, "Incorrect initial liquidity minted");
         
-        // Dans l'implémentation, _totalSupply n'inclut pas MINIMUM_LIQUIDITY
-        assertEq(pool.totalSupply(), expectedLiquidity, "Incorrect total supply");
-        assertEq(pool.balanceOf(USER1), expectedLiquidity, "Incorrect user balance");
-        assertEq(pool.balanceOf(address(0)), 1000, "Incorrect zero address balance"); // MINIMUM_LIQUIDITY locked
+        // Verify total supply and user balance
+        assertEq(pool.totalSupply(), expectedLiquidity, "Incorrect total supply after initial mint");
+        assertEq(pool.balanceOf(USER1), expectedLiquidity, "Incorrect user LP balance after initial mint");
+        // Check that address(0) does NOT have MINIMUM_LIQUIDITY
+        assertEq(pool.balanceOf(address(0)), 0, "address(0) should not have LP tokens");
         
-        // Verify reserves
+        // Verify reserves match amounts added
         (uint256 reserve1, uint256 reserve2) = pool.getReserves();
-        assertEq(reserve1, AMOUNT1, "Incorrect reserve1");
-        assertEq(reserve2, AMOUNT2, "Incorrect reserve2");
+        assertEq(reserve1, AMOUNT1, "Incorrect reserve1 after initial add");
+        assertEq(reserve2, AMOUNT2, "Incorrect reserve2 after initial add");
         
         vm.stopPrank();
     }
@@ -176,7 +178,7 @@ contract PoolAddLiquidityTest is Test {
         assertEq(pool.balanceOf(USER1), liquidity1, "Incorrect USER1 balance");
         assertEq(pool.balanceOf(USER2), liquidity2, "Incorrect USER2 balance");
         
-        // Dans l'implémentation, _totalSupply n'inclut pas MINIMUM_LIQUIDITY
+        // Verify total supply
         assertEq(pool.totalSupply(), liquidity1 + liquidity2, "Incorrect total supply");
         
         // Verify reserves (USER1 + USER2 contributions)
@@ -208,44 +210,45 @@ contract PoolAddLiquidityTest is Test {
         vm.stopPrank();
     }
     
-    function test_fuzz_addLiquidity(uint128 amount1, uint128 amount2) public {
-        // Ensure amounts are reasonable (not too small, not too large)
-        vm.assume(amount1 > 1000 && amount2 > 1000);
-        vm.assume(amount1 < 10_000_000 * 10**18 && amount2 < 10_000_000 * 10**18);
+    function test_fuzz_addLiquidity(uint128 amountA, uint128 amountB) public {
+        vm.assume(amountA > 0 && amountB > 0);
         
-        // Mint tokens for fuzz test
+        // Mint necessary tokens to USER1 for the fuzz amounts
         vm.startPrank(OWNER);
-        TestToken(token1).mint(USER1, amount1);
-        TestToken(token2).mint(USER1, amount2);
+        TestToken(token1).mint(USER1, amountA);
+        TestToken(token2).mint(USER1, amountB);
         vm.stopPrank();
         
-        // Add liquidity
         vm.startPrank(USER1);
-        uint256 liquidityMinted = pool.addLiquidity(amount1, amount2);
         
-        // Initial liquidity calculation
-        uint256 expectedLiquidity = sqrt(uint256(amount1) * uint256(amount2)) - 1000;
+        // Get state before adding liquidity
+        uint256 totalSupplyBefore = pool.totalSupply();
+        (uint256 reserveABefore, uint256 reserveBBefore) = pool.getReserves();
+        uint256 userLpBefore = pool.balanceOf(USER1);
         
-        // Verify results
-        assertEq(liquidityMinted, expectedLiquidity, "Incorrect liquidity minted");
-        (uint256 reserve1, uint256 reserve2) = pool.getReserves();
-        assertEq(reserve1, amount1, "Incorrect reserve1");
-        assertEq(reserve2, amount2, "Incorrect reserve2");
-        
-        vm.stopPrank();
-    }
-    
-    // Helper function to calculate square root (same as in Math library)
-    function sqrt(uint256 y) internal pure returns (uint256 z) {
-        if (y > 3) {
-            z = y;
-            uint256 x = y / 2 + 1;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            }
-        } else if (y != 0) {
-            z = 1;
+        // Calculate expected liquidity
+        uint256 expectedLiquidity;
+        if (totalSupplyBefore == 0) {
+            expectedLiquidity = Math.sqrt(uint256(amountA) * uint256(amountB)); // Use new formula
+        } else {
+            uint256 liquidityA = (uint256(amountA) * totalSupplyBefore) / reserveABefore;
+            uint256 liquidityB = (uint256(amountB) * totalSupplyBefore) / reserveBBefore;
+            expectedLiquidity = Math.min(liquidityA, liquidityB);
         }
+
+        // Perform addLiquidity
+        uint256 actualLiquidity = pool.addLiquidity(amountA, amountB);
+        
+        // Verify minted liquidity amount
+        assertEq(actualLiquidity, expectedLiquidity, "Incorrect liquidity minted");
+        
+        // Verify state after
+        assertEq(pool.totalSupply(), totalSupplyBefore + actualLiquidity, "Total supply mismatch");
+        assertEq(pool.balanceOf(USER1), userLpBefore + actualLiquidity, "User LP balance mismatch");
+        (uint256 reserveAAfter, uint256 reserveBAfter) = pool.getReserves();
+        assertEq(reserveAAfter, reserveABefore + amountA, "Reserve A mismatch");
+        assertEq(reserveBAfter, reserveBBefore + amountB, "Reserve B mismatch");
+
+        vm.stopPrank();
     }
 } 

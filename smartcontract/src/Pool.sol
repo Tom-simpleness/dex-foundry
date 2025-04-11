@@ -4,12 +4,11 @@ pragma solidity 0.8.26;
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-import "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IPool.sol";
 import "./interfaces/IPoolFactory.sol";
 import "./lib/Math.sol";
 
-contract Pool is IPool, Ownable, ReentrancyGuard {
+contract Pool is IPool, Ownable {
     using SafeERC20 for IERC20;
 
     address public tokenA;
@@ -25,9 +24,6 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
     
     // Requirement: Prevent initialization after deployment
     bool private initialized;
-    
-    // Minimum liquidity locked forever to prevent division by zero
-    uint256 private constant MINIMUM_LIQUIDITY = 1000;
     
     constructor() Ownable(msg.sender) {
         // Factory will set as owner after deployment
@@ -76,34 +72,27 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         return numerator / denominator;
     }
     
-    // Requirement: Protect against flash loan attacks and sandwich attacks
-    // Updates reserves before any operation
+    // Synchronizes internal reserve variables with the actual token balances held by the pool.
+    // Called before calculations in `swap` to use fresh balances, and after state changes
+    // in `addLiquidity`/`removeLiquidity` to record the final state.
     function _updateReserves() private {
         reserveA = IERC20(tokenA).balanceOf(address(this));
         reserveB = IERC20(tokenB).balanceOf(address(this));
     }
     
     // Requirement: Users must contribute proportionally to current reserves
-    function addLiquidity(uint256 amountA, uint256 amountB) external override nonReentrant returns (uint256 liquidity) {
+    function addLiquidity(uint256 amountA, uint256 amountB) external override returns (uint256 liquidity) {
         require(amountA > 0 && amountB > 0, "Pool: insufficient deposit amounts");
         
-        uint256 _reserveA = reserveA;
-        uint256 _reserveB = reserveB;
+        // Read reserves *before* calculating liquidity
+        (uint256 _reserveA, uint256 _reserveB) = (reserveA, reserveB); 
         
-        // Transfer tokens to the pool
-        IERC20(tokenA).safeTransferFrom(msg.sender, address(this), amountA);
-        IERC20(tokenB).safeTransferFrom(msg.sender, address(this), amountB);
-        
-        // Calculate liquidity tokens to mint
+        // Calculate liquidity tokens to mint (Check)
         uint256 totalSupplyBefore = _totalSupply;
         
         if (totalSupplyBefore == 0) {
-            // First deposit, LP tokens are based on geometric mean of deposits minus minimum liquidity
-            liquidity = Math.sqrt(amountA * amountB) - MINIMUM_LIQUIDITY;
-            // Mint minimum liquidity to zero address to lock it forever
-            _balances[address(0)] = MINIMUM_LIQUIDITY;
+            liquidity = Math.sqrt(amountA * amountB);
         } else {
-            // Subsequent deposits, take the minimum of the proportional values
             liquidity = Math.min(
                 (amountA * totalSupplyBefore) / _reserveA,
                 (amountB * totalSupplyBefore) / _reserveB
@@ -112,18 +101,23 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         
         require(liquidity > 0, "Pool: insufficient liquidity minted");
         
-        // Mint LP tokens
+        // Update internal state (Effect)
         _balances[msg.sender] += liquidity;
-        _totalSupply = _totalSupply + liquidity;
+        _totalSupply = _totalSupply + liquidity; 
         
-        // Update reserves
-        _updateReserves();
-        
+        // Emit event (Effect)
         emit LiquidityAdded(msg.sender, amountA, amountB, liquidity);
+
+        // Perform transfers (Interaction)
+        IERC20(tokenA).safeTransferFrom(msg.sender, address(this), amountA);
+        IERC20(tokenB).safeTransferFrom(msg.sender, address(this), amountB);
+        
+        // Update reserves *after* everything
+        _updateReserves();
     }
     
     // Requirement: Users can only withdraw proportionally to their LP tokens
-    function removeLiquidity(uint256 liquidity) external override nonReentrant returns (uint256 amountA, uint256 amountB) {
+    function removeLiquidity(uint256 liquidity) external override returns (uint256 amountA, uint256 amountB) {
         require(_balances[msg.sender] >= liquidity, "Pool: insufficient balance");
         
         uint256 totalSupplyBefore = _totalSupply;
@@ -154,7 +148,7 @@ contract Pool is IPool, Ownable, ReentrancyGuard {
         address tokenIn, 
         uint256 amountIn, 
         address recipient // Added recipient parameter
-    ) external override nonReentrant returns (uint256 amountOut) { 
+    ) external override returns (uint256 amountOut) { 
         require(tokenIn == tokenA || tokenIn == tokenB, "Pool: invalid input token");
         require(amountIn > 0, "Pool: insufficient input amount");
         require(recipient != address(0), "Pool: invalid recipient");

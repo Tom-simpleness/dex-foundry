@@ -69,15 +69,16 @@ Please refer to the [Foundry Book](https://book.getfoundry.sh/) for detailed com
 *   **Token Factory:**
     [`0x52d20ba31f9405db2d64c1b269937507b92b233b`](https://sepolia.etherscan.io/address/0x52d20ba31f9405db2d64c1b269937507b92b233b#writeContract)
 
-*   **Pool Factory:**
-    [`0x6d0083e9b3d75a9b3aa822502c6350b9589d5ab6`](https://sepolia.etherscan.io/address/0x6d0083e9b3d75a9b3aa822502c6350b9589d5ab6#code)
+*   **Pool Factory (New):**
+    [`0x06f9AC2dB7cfa13aE7762aFb5908f1325cafA778`](https://sepolia.etherscan.io/address/0x06f9AC2dB7cfa13aE7762aFb5908f1325cafA778)
 
 *   **Example Pool (ERCB/ERCC):**
     *   Pool Address: [`0x830dd10768dfdd87b6a1885c42b96c13f327d9d1`](https://sepolia.etherscan.io/address/0x830dd10768dfdd87b6a1885c42b96c13f327d9d1#code)
     *   ERCB Token: [`0x71686439C90B330A3cB15E77F8766675Ce8c6ee0`](https://sepolia.etherscan.io/address/0x71686439C90B330A3cB15E77F8766675Ce8c6ee0)
     *   ERCC Token: [`0x5329fdb58915b27A104eA8eCC24E3C871c6b6025`](https://sepolia.etherscan.io/address/0x5329fdb58915b27A104eA8eCC24E3C871c6b6025)
 
+*(Note: The DexRouter address is not listed here, consider adding it if deployed)*
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
