@@ -34,3 +34,4 @@ coverage.json
 # Logs
 *.log 
 
+slither/
