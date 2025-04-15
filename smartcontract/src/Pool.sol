@@ -32,7 +32,12 @@ contract Pool is IPool, Ownable {
     // Requirement: Pool must be initialized with tokens and factory only once
     function initialize(address _tokenA, address _tokenB, address _factory) external override onlyOwner {
         require(!initialized, "Pool: already initialized");
-        
+        // --- Checks --- 
+        require(_tokenA != address(0), "Pool: tokenA cannot be zero address");
+        require(_tokenB != address(0), "Pool: tokenB cannot be zero address");
+        require(_factory != address(0), "Pool: factory cannot be zero address");
+
+        // --- Effects --- 
         tokenA = _tokenA;
         tokenB = _tokenB;
         factory = _factory;

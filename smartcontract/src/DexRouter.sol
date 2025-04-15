@@ -16,6 +16,8 @@ contract DexRouter is IDexRouter {
     address public immutable override factory;
     address public immutable override uniswapRouter;
     uint256 public override forwardingFee = 50; // 0.5% additional fee
+
+    event ForwardingFeeUpdated(uint256 oldFee, uint256 newFee);
     
     constructor(address _factory, address _uniswapRouter) {
         require(_factory != address(0), "DexRouter: Invalid factory address");
@@ -29,23 +31,23 @@ contract DexRouter is IDexRouter {
         address tokenOut,
         uint256 amountIn,
         uint256 minAmountOut,
-        address recipient
+        address recipient,
+        uint256 deadline
     ) external override returns (uint256 amountOut) {
         // Try to get the pool from our factory
         address pool = IPoolFactory(factory).tokenPairToPoolAddress(tokenIn, tokenOut);
         
         if (pool != address(0)) {
             // Pool exists in our DEX
-            return _swapOnOurDex(tokenIn, tokenOut, pool, amountIn, minAmountOut, recipient);
+            return _swapOnOurDex(tokenIn, pool, amountIn, minAmountOut, recipient);
         } else {
             // Pool doesn't exist, forward to Uniswap
-            return _swapOnUniswap(tokenIn, tokenOut, amountIn, minAmountOut, recipient);
+            return _swapOnUniswap(tokenIn, tokenOut, amountIn, minAmountOut, recipient, deadline);
         }
     }
     
     function _swapOnOurDex(
         address tokenIn,
-        address tokenOut,
         address pool,
         uint256 amountIn,
         uint256 minAmountOut,
@@ -66,7 +68,8 @@ contract DexRouter is IDexRouter {
         address tokenOut,
         uint256 amountIn,
         uint256 minAmountOut,
-        address recipient
+        address recipient,
+        uint256 deadline
     ) internal returns (uint256) {
         // Calculate forwarding fee
         uint256 feeAmount = (amountIn * forwardingFee) / 10000;
@@ -82,29 +85,34 @@ contract DexRouter is IDexRouter {
         
         // Transfer remaining tokens to this contract (needed for Uniswap call)
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountAfterFee);
-        IERC20(tokenIn).approve(uniswapRouter, amountAfterFee);
+        
+        // Use standard approve and check its return value
+        bool success = IERC20(tokenIn).approve(uniswapRouter, amountAfterFee);
+        require(success, "DexRouter: Approve failed");
         
         // Define the path
         address[] memory path = new address[](2);
         path[0] = tokenIn;
         path[1] = tokenOut;
         
-        // Swap on Uniswap
+        // Swap on Uniswap using the provided deadline
         uint[] memory amounts = IUniswapV2Router02(uniswapRouter).swapExactTokensForTokens(
             amountAfterFee,
             minAmountOut,
             path,
             recipient,
-            block.timestamp // Use current block timestamp for deadline check (consider adding buffer?)
+            deadline
         );
         
         require(amounts.length >= 2, "DexRouter: Invalid Uniswap return");
         return amounts[amounts.length - 1]; // Return last amount (amountOut)
     }
-    
+
     function setForwardingFee(uint256 _fee) external override {
         require(msg.sender == Ownable(factory).owner(), "DexRouter: Not factory owner");
         require(_fee <= 200, "DexRouter: Fee too high"); // Max 2%
+        uint256 oldFee = forwardingFee;
         forwardingFee = _fee;
+        emit ForwardingFeeUpdated(oldFee, _fee);
     }
 }

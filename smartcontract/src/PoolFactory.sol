@@ -38,15 +38,16 @@ contract PoolFactory is IPoolFactory, Ownable {
             pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         
-        // Initialize pool
-        Pool(pool).initialize(token0, token1, address(this));
-        
-        // Store pool address in mapping
+        // --- Effects: Update state BEFORE external call ---
         tokenPairToPoolAddress[token0][token1] = pool;
         tokenPairToPoolAddress[token1][token0] = pool;
         allPairs.push(pool);
         
-        emit PoolCreated(token0, token1, pool);
+        // --- Effect: Emit event BEFORE interaction ---
+        emit PoolCreated(token0, token1, pool); 
+        
+        // --- Interaction: Initialize pool AFTER updating state and emitting event ---
+        Pool(pool).initialize(token0, token1, address(this));
     }
     
     // Requirement: Only owner can set fee recipient
