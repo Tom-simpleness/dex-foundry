@@ -13,8 +13,9 @@ interface IDexRouter {
         address tokenOut,
         uint256 amountIn,
         uint256 minAmountOut,
-        address recipient
+        address recipient,
+        uint256 deadline
     ) external returns (uint256 amountOut);
 
-    function setForwardingFee(uint256 _fee) external;
+    function setForwardingFee(uint256 _fee) external;   
 } 

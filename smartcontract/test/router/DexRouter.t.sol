@@ -70,7 +70,7 @@ contract DexRouterTest is Test {
         
         // Swapper token1 pour token2
         uint256 balanceBefore = TestToken(token2).balanceOf(USER);
-        uint256 amountOut = router.swap(token1, token2, 100 * 10**18, 1, USER);
+        uint256 amountOut = router.swap(token1, token2, 100 * 10**18, 1, USER, block.timestamp);
         uint256 balanceAfter = TestToken(token2).balanceOf(USER);
         
         // Vérifier que le swap a bien eu lieu
@@ -90,7 +90,7 @@ contract DexRouterTest is Test {
         uint256 usdcBefore = IERC20(USDC).balanceOf(USER);
         
         // Swapper WETH pour USDC via Uniswap
-        uint256 amountOut = router.swap(WETH, USDC, 1 ether, 1, USER);
+        uint256 amountOut = router.swap(WETH, USDC, 1 ether, 1, USER, block.timestamp);
         
         // Solde USDC après
         uint256 usdcAfter = IERC20(USDC).balanceOf(USER);
@@ -112,7 +112,7 @@ contract DexRouterTest is Test {
         uint256 ownerWethBefore = IERC20(WETH).balanceOf(OWNER);
         
         // Swapper WETH pour USDC via Uniswap
-        router.swap(WETH, USDC, 1 ether, 1, USER);
+        router.swap(WETH, USDC, 1 ether, 1, USER, block.timestamp);
         
         // Solde WETH de OWNER après
         uint256 ownerWethAfter = IERC20(WETH).balanceOf(OWNER);
