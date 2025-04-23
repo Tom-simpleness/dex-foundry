@@ -124,7 +124,9 @@ contract Pool is IPool, Ownable {
         
         // Update internal state (Effect)
         _balances[msg.sender] += liquidity;
-        _totalSupply = _totalSupply + liquidity; 
+        unchecked {
+            _totalSupply = _totalSupply + liquidity; 
+        }
         
         // Emit event (Effect)
         emit LiquidityAdded(msg.sender, amountA, amountB, liquidity);
@@ -151,7 +153,9 @@ contract Pool is IPool, Ownable {
         
         // Burn LP tokens
         _balances[msg.sender] -= liquidity;
-        _totalSupply = _totalSupply - liquidity;
+        unchecked {
+            _totalSupply = _totalSupply - liquidity;
+        }
         
         // Transfer tokens
         IERC20(tokenA).safeTransfer(msg.sender, amountA);
