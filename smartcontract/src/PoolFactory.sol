@@ -5,6 +5,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IPoolFactory.sol";
 import "./Pool.sol";
 
+// --- Custom Errors ---
+error FactoryIdenticalAddresses();
+error FactoryZeroAddress();
+error FactoryPoolExists();
+error FactoryFeeTooHigh();
+error FactoryInvalidProtocolFeePortion();
+
 contract PoolFactory is IPoolFactory, Ownable {
     mapping(address => mapping(address => address)) public tokenPairToPoolAddress;
     address[] public allPairs;
@@ -23,13 +30,13 @@ contract PoolFactory is IPoolFactory, Ownable {
     
     // Requirement: Only allow creating pools for valid token pairs
     function createPool(address tokenA, address tokenB) external override returns (address pool) {
-        require(tokenA != tokenB, "Factory: identical addresses");
-        require(tokenA != address(0) && tokenB != address(0), "Factory: zero address");
+        if (tokenA == tokenB) revert FactoryIdenticalAddresses();
+        if (tokenA == address(0) || tokenB == address(0)) revert FactoryZeroAddress();
         
         (address token0, address token1) = _sortTokens(tokenA, tokenB);
         
         // Requirement: Prevent duplicate pools
-        require(tokenPairToPoolAddress[token0][token1] == address(0), "Factory: pool exists");
+        if (tokenPairToPoolAddress[token0][token1] != address(0)) revert FactoryPoolExists();
         
         // Create a new pool
         bytes memory bytecode = type(Pool).creationCode;
@@ -52,21 +59,21 @@ contract PoolFactory is IPoolFactory, Ownable {
     
     // Requirement: Only owner can set fee recipient
     function setFeeRecipient(address _feeRecipient) external override onlyOwner {
-        require(_feeRecipient != address(0), "Factory: zero address");
+        if (_feeRecipient == address(0)) revert FactoryZeroAddress();
         feeRecipient = _feeRecipient;
     }
     
     // Requirement: Only owner can set fee, with maximum limit
     function setFee(uint256 _fee) external override onlyOwner {
         // Prevent setting unreasonably high fees (max 5%)
-        require(_fee <= 500, "Factory: fee too high");
+        if (_fee > 500) revert FactoryFeeTooHigh();
         fee = _fee;
     }
     
     // Requirement: Only owner can set protocol fee portion
     function setProtocolFeePortion(uint256 _protocolFeePortion) external onlyOwner {
         // Ensure the portion is between 0% and 100%
-        require(_protocolFeePortion <= 10000, "Factory: invalid protocol fee portion");
+        if (_protocolFeePortion > 10000) revert FactoryInvalidProtocolFeePortion();
         protocolFeePortion = _protocolFeePortion;
     }
 } 
