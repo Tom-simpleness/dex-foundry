@@ -8,6 +8,22 @@ import "./interfaces/IPool.sol";
 import "./interfaces/IPoolFactory.sol";
 import "./lib/Math.sol";
 
+// --- Custom Errors ---
+error PoolAlreadyInitialized();
+error PoolInvalidTokenAddress();
+error PoolInvalidFactoryAddress();
+error PoolInsufficientDepositAmounts();
+error PoolInsufficientLiquidityMinted();
+error PoolInsufficientBalance();
+error PoolInsufficientLiquidityRemovedAmounts();
+error PoolInvalidInputToken();
+error PoolInsufficientInputAmount();
+error PoolInvalidRecipient();
+error PoolInsufficientOutputAmount();
+error PoolInsufficientLiquidityForOutput();
+error MathInsufficientInputAmount(); 
+error MathInsufficientLiquidity();
+
 contract Pool is IPool, Ownable {
     using SafeERC20 for IERC20;
 
@@ -31,11 +47,11 @@ contract Pool is IPool, Ownable {
     
     // Requirement: Pool must be initialized with tokens and factory only once
     function initialize(address _tokenA, address _tokenB, address _factory) external override onlyOwner {
-        require(!initialized, "Pool: already initialized");
+        if (initialized) revert PoolAlreadyInitialized();
         // --- Checks --- 
-        require(_tokenA != address(0), "Pool: tokenA cannot be zero address");
-        require(_tokenB != address(0), "Pool: tokenB cannot be zero address");
-        require(_factory != address(0), "Pool: factory cannot be zero address");
+        if (_tokenA == address(0)) revert PoolInvalidTokenAddress();
+        if (_tokenB == address(0)) revert PoolInvalidTokenAddress();
+        if (_factory == address(0)) revert PoolInvalidFactoryAddress();
 
         // --- Effects --- 
         tokenA = _tokenA;
@@ -49,7 +65,7 @@ contract Pool is IPool, Ownable {
         return (tokenA, tokenB);
     }
     
-    function getReserves() public view override returns (uint256, uint256) {
+    function getReserves() external view override returns (uint256, uint256) {
         return (reserveA, reserveB);
     }
     
@@ -65,9 +81,9 @@ contract Pool is IPool, Ownable {
     // Used for calculating output amounts in swaps
     function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut, uint256 fee) private pure returns (uint256) {
         // Requirement: Ensure sufficient input amount
-        require(amountIn > 0, "Math: INSUFFICIENT_INPUT_AMOUNT");
+        if (amountIn == 0) revert MathInsufficientInputAmount();
         // Requirement: Ensure pools have liquidity
-        require(reserveIn > 0 && reserveOut > 0, "Math: INSUFFICIENT_LIQUIDITY");
+        if (reserveIn == 0 || reserveOut == 0) revert MathInsufficientLiquidity();
         
         // Adjust for fee (fee is in basis points, e.g. 30 = 0.3%)
         uint256 amountInWithFee = amountIn * (10000 - fee);
@@ -87,7 +103,7 @@ contract Pool is IPool, Ownable {
     
     // Requirement: Users must contribute proportionally to current reserves
     function addLiquidity(uint256 amountA, uint256 amountB) external override returns (uint256 liquidity) {
-        require(amountA > 0 && amountB > 0, "Pool: insufficient deposit amounts");
+        if (amountA == 0 || amountB == 0) revert PoolInsufficientDepositAmounts();
         
         // Read reserves *before* calculating liquidity
         (uint256 _reserveA, uint256 _reserveB) = (reserveA, reserveB); 
@@ -104,7 +120,7 @@ contract Pool is IPool, Ownable {
             );
         }
         
-        require(liquidity > 0, "Pool: insufficient liquidity minted");
+        if (liquidity == 0) revert PoolInsufficientLiquidityMinted();
         
         // Update internal state (Effect)
         _balances[msg.sender] += liquidity;
@@ -123,7 +139,7 @@ contract Pool is IPool, Ownable {
     
     // Requirement: Users can only withdraw proportionally to their LP tokens
     function removeLiquidity(uint256 liquidity) external override returns (uint256 amountA, uint256 amountB) {
-        require(_balances[msg.sender] >= liquidity, "Pool: insufficient balance");
+        if (_balances[msg.sender] < liquidity) revert PoolInsufficientBalance();
         
         uint256 totalSupplyBefore = _totalSupply;
         
@@ -131,7 +147,7 @@ contract Pool is IPool, Ownable {
         amountA = (liquidity * reserveA) / totalSupplyBefore;
         amountB = (liquidity * reserveB) / totalSupplyBefore;
         
-        require(amountA > 0 && amountB > 0, "Pool: insufficient amounts");
+        if (amountA == 0 || amountB == 0) revert PoolInsufficientLiquidityRemovedAmounts();
         
         // Burn LP tokens
         _balances[msg.sender] -= liquidity;
@@ -154,9 +170,9 @@ contract Pool is IPool, Ownable {
         uint256 amountIn, 
         address recipient // Added recipient parameter
     ) external override returns (uint256 amountOut) { 
-        require(tokenIn == tokenA || tokenIn == tokenB, "Pool: invalid input token");
-        require(amountIn > 0, "Pool: insufficient input amount");
-        require(recipient != address(0), "Pool: invalid recipient");
+        if (tokenIn != tokenA && tokenIn != tokenB) revert PoolInvalidInputToken();
+        if (amountIn == 0) revert PoolInsufficientInputAmount();
+        if (recipient == address(0)) revert PoolInvalidRecipient();
         
         _updateReserves(); // Update reserves based on current balances (including received tokenIn)
 
@@ -173,8 +189,8 @@ contract Pool is IPool, Ownable {
         
         // Calculate output amount based on reserves *before* the swap
         amountOut = getAmountOut(amountIn, reserveInForCalc, reserveOut, fee);
-        require(amountOut > 0, "Pool: insufficient output amount");
-        require(amountOut < reserveOut, "Pool: insufficient liquidity for output"); // Prevent draining the pool
+        if (amountOut == 0) revert PoolInsufficientOutputAmount();
+        if (amountOut >= reserveOut) revert PoolInsufficientLiquidityForOutput(); // Prevent draining the pool
         
         // No need for feeAmount calculation or protocol fee transfer here, 
         // as the fee is inherently kept in the pool by the getAmountOut formula.
