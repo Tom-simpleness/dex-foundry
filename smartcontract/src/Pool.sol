@@ -64,7 +64,7 @@ contract Pool is IPool, Ownable {
     function getTokens() external view override returns (address, address) {
         return (tokenA, tokenB);
     }
-    
+    // turn public into external
     function getReserves() external view override returns (uint256, uint256) {
         return (reserveA, reserveB);
     }
