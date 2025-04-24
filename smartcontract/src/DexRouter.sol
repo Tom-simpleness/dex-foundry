@@ -9,6 +9,15 @@ import "./interfaces/IPoolFactory.sol";
 import "./interfaces/IPool.sol";
 import "./interfaces/IDexRouter.sol";
 
+// --- Custom Errors ---
+error DexRouterInvalidFactoryAddress();
+error DexRouterInvalidUniswapRouterAddress();
+error DexRouterInsufficientOutputAmount();
+error DexRouterApproveFailed();
+error DexRouterInvalidUniswapReturn();
+error DexRouterNotFactoryOwner();
+error DexRouterFeeTooHigh();
+
 
 contract DexRouter is IDexRouter {
     using SafeERC20 for IERC20;
@@ -20,8 +29,8 @@ contract DexRouter is IDexRouter {
     event ForwardingFeeUpdated(uint256 oldFee, uint256 newFee);
     
     constructor(address _factory, address _uniswapRouter) {
-        require(_factory != address(0), "DexRouter: Invalid factory address");
-        require(_uniswapRouter != address(0), "DexRouter: Invalid uniswapRouter address");
+        if (_factory == address(0)) revert DexRouterInvalidFactoryAddress();
+        if (_uniswapRouter == address(0)) revert DexRouterInvalidUniswapRouterAddress();
         factory = _factory;
         uniswapRouter = _uniswapRouter;
     }
@@ -58,7 +67,7 @@ contract DexRouter is IDexRouter {
         
         // Perform the swap - Pool will send tokenOut directly to recipient
         uint256 amountOut = IPool(pool).swap(tokenIn, amountIn, recipient);
-        require(amountOut >= minAmountOut, "DexRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        if (amountOut < minAmountOut) revert DexRouterInsufficientOutputAmount();
         
         return amountOut;
     }
@@ -71,9 +80,13 @@ contract DexRouter is IDexRouter {
         address recipient,
         uint256 deadline
     ) internal returns (uint256) {
+        uint256 feeAmount;
+        uint256 amountAfterFee;
         // Calculate forwarding fee
-        uint256 feeAmount = (amountIn * forwardingFee) / 10000;
-        uint256 amountAfterFee = amountIn - feeAmount;
+        unchecked {
+            feeAmount = (amountIn * forwardingFee) / 10000;
+            amountAfterFee = amountIn - feeAmount;
+        }
         
         // Get fee recipient from the factory
         address feeRecipient = IPoolFactory(factory).feeRecipient();
@@ -88,7 +101,7 @@ contract DexRouter is IDexRouter {
         
         // Use standard approve and check its return value
         bool success = IERC20(tokenIn).approve(uniswapRouter, amountAfterFee);
-        require(success, "DexRouter: Approve failed");
+        if (!success) revert DexRouterApproveFailed();
         
         // Define the path
         address[] memory path = new address[](2);
@@ -104,13 +117,13 @@ contract DexRouter is IDexRouter {
             deadline
         );
         
-        require(amounts.length >= 2, "DexRouter: Invalid Uniswap return");
+        if (amounts.length < 2) revert DexRouterInvalidUniswapReturn();
         return amounts[amounts.length - 1]; // Return last amount (amountOut)
     }
 
     function setForwardingFee(uint256 _fee) external override {
-        require(msg.sender == Ownable(factory).owner(), "DexRouter: Not factory owner");
-        require(_fee <= 200, "DexRouter: Fee too high"); // Max 2%
+        if (msg.sender != Ownable(factory).owner()) revert DexRouterNotFactoryOwner();
+        if (_fee > 200) revert DexRouterFeeTooHigh(); // Max 2%
         uint256 oldFee = forwardingFee;
         forwardingFee = _fee;
         emit ForwardingFeeUpdated(oldFee, _fee);
